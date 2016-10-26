@@ -14,5 +14,8 @@ import Model
 --This is where we convert all different elements in the passed world to a Picture
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> Picture
-draw horizontalResolution verticalResolution world@(World{..})
-    = Blank
+draw horizontalResolution verticalResolution world
+    = drawPlayer (_player world)
+    
+drawPlayer :: Player -> Picture
+drawPlayer p = Blank

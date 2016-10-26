@@ -26,6 +26,9 @@ import Controller
 --In Model.hs the initial const (The starting world)
 --In Event.hs the user actions (==InputHandler)
 
+--play :: Display -> Color -> Int -> world -> (world -> Picture) ->
+--        (Event -> world -> world) -> (Float -> world -> world) -> IO ()
+
 main :: IO ()
 main = do
     args <- getArgs
