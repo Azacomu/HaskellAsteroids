@@ -10,6 +10,8 @@ import Model
 
 -- | Event handling
 
+
+--Returns a world with the rotateAction/movementAction changed to needed value
 eventHandler :: Event -> World -> World
 eventHandler (EventKey (SpecialKey KeyLeft ) Down _ _)
     = rotateAction .~ RotateLeft
