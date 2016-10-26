@@ -54,13 +54,13 @@ executable lambda-wars
   -- other-modules:
 
   -- LANGUAGE extensions used by modules in this package.
-  default-extensions:  DisambiguateRecordFields, NamedFieldPuns
+  default-extensions:  TemplateHaskell, DisambiguateRecordFields, NamedFieldPuns
 
   -- Other library packages from which modules are imported.
   if flag(old-libs)
-    build-depends:     base >=4.0 && <5.0, gloss >=1.8 && <1.9, random >=1.0 && <1.1, time >=1.4 && <1.5
+    build-depends:     base >=4.0 && <5.0, gloss >=1.8 && <1.9, random >=1.0 && <1.1, time >=1.4 && <1.5, lens
   else
-    build-depends:     base >=4.0 && <5.0, gloss >=1.9 && <1.11, random >=1.1 && <1.2, time >=1.5 && <1.7
+    build-depends:     base >=4.0 && <5.0, gloss >=1.9 && <1.11, random >=1.1 && <1.2, time >=1.5 && <1.7, lens
 
   -- Directories containing source files.
   hs-source-dirs:      src
