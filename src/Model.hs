@@ -23,16 +23,16 @@ data ShootAction    = Shoot      | DontShoot                deriving (Show)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos :: Point
-                     , _playerSize:: Double
+                     , _playerSize:: Float
                      , _lives     :: Int
                      , _score     :: Int
                      , _scoreMul  :: Int
                      } deriving (Show)
 data Enemy  = Enemy  { _enemyPos  :: Point
-                     , _enemySize :: Double
+                     , _enemySize :: Float
                      } deriving (Show)
-data Point  = Point  { _x         :: Double
-                     , _y         :: Double
+data Point  = Point  { _x         :: Float
+                     , _y         :: Float
                      } deriving (Show)
 
 --Add lenses below (must be after defining datatypes)
