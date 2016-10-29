@@ -50,7 +50,8 @@ initial seed = World { _rndGen         = mkStdGen seed
                      , _movementAction = NoMovement
                      , _shootAction    = DontShoot
                      , _player         = newPlayer
-                     , _enemies        = []
+                     , _enemies        = [newEnemy (Point {_x = -10, _y = -10}),
+                                          newEnemy (Point {_x = -200, _y = -100})]
                      , _passedTime     = 0
                      }
                       

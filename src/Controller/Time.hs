@@ -12,7 +12,7 @@ import Control.Monad.State
 
 import Data.List
 
-import Graphics.Gloss
+import Graphics.Gloss hiding (Point)
 import Graphics.Gloss.Geometry.Angle
 
 import System.Random
@@ -40,14 +40,22 @@ timeHandler time = execState changeWorld
 changeWorld :: MonadState World m => m World
 changeWorld = do player.playerPos.x += 1
                  player.playerPos.y -= 1
-                 world <- get
-                 return world
+                 moveEnemies
+                 get
 
+moveEnemies :: MonadState World m => m World
+moveEnemies = do ppos <- use $ player.playerPos
+                 enemies.traversed.enemyPos %= moveTo 2 ppos
+                 get
 
+-- Move a certain amount of pixels to a goal.
+moveTo :: Float -> Point -> Point -> Point
+moveTo speed goal start = Point {_x = start^.x + speed * sin dir, _y = start^.y + speed * cos dir}
+                        where dir = pointDirection start goal
 
-
-
-
+-- Get the direction between two points
+pointDirection :: Point -> Point -> Float
+pointDirection p1 p2 = atan2 (p2^.x - p1^.x) (p2^.y - p1^.y)
 
 
 

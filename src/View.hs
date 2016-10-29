@@ -6,6 +6,7 @@ module View (
 
 import Graphics.Gloss hiding (Point)
 import Graphics.Gloss.Geometry.Angle
+import Data.Monoid
 
 import Control.Lens
 
@@ -18,6 +19,7 @@ import Model
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world
     = drawCircle (world^.player.playerPos) blue 20
+      <> drawEnemies world
     
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
@@ -27,6 +29,6 @@ drawCircle p c r = translate (p^.x) (p^.y) (color c (circle r))
 drawStdCircle :: Point -> Picture
 drawStdCircle p = drawCircle p white 5
 
-
-
-
+drawEnemies :: World -> Picture
+drawEnemies world = pictures $ map drawEnemy (world^.enemies)
+                  where drawEnemy enemy = drawCircle (enemy^.enemyPos) red 20
