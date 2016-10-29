@@ -57,5 +57,9 @@ moveTo speed goal start = Point {_x = start^.x + speed * sin dir, _y = start^.y 
 pointDirection :: Point -> Point -> Float
 pointDirection p1 p2 = atan2 (p2^.x - p1^.x) (p2^.y - p1^.y)
 
-
-
+-- Get a random value using the world state
+getRandomR :: (MonadState World m, Random a) => (a, a) -> m (a)
+getRandomR range = do generator <- use rndGen
+                      let r = randomR range generator
+                      rndGen .= snd r
+                      return $ fst r
