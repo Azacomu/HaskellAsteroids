@@ -36,17 +36,27 @@ timeHandler time = execState changeWorld
 --(In runState, the s given is a starting state, in our case the current world)
 --(Identity is a monad, that returns the normal value, runIdentity :: a)
 
---Change the world in the MonadState, then get the final world and return it.
-changeWorld :: MonadState World m => m World
+--Change the world in the MonadState
+changeWorld :: MonadState World m => m ()
 changeWorld = do player.playerPos.x += 1
                  player.playerPos.y -= 1
+                 spawnEnemies
                  moveEnemies
-                 get
 
-moveEnemies :: MonadState World m => m World
+-- Spawn new enemies every now and then
+spawnEnemies :: MonadState World m => m ()
+spawnEnemies = do spawner <- use enemySpawner
+                  enemySpawner.timeToNext -= 1
+                  when ((spawner^.timeToNext) <= 0) $ do
+                      spawnX <- getRandomR (-400, 400)
+                      spawnY <- getRandomR (-300, 300)
+                      enemies %= (newEnemy (Point {_x = spawnX, _y = spawnY}) :)
+                      enemySpawner.timeToNext += spawner^.interval
+
+-- Move the enemies in the world
+moveEnemies :: MonadState World m => m ()
 moveEnemies = do ppos <- use $ player.playerPos
                  enemies.traversed.enemyPos %= moveTo 2 ppos
-                 get
 
 -- Move a certain amount of pixels to a goal.
 moveTo :: Float -> Point -> Point -> Point

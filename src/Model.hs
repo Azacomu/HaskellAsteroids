@@ -15,6 +15,7 @@ data World = World { _rndGen           :: StdGen
                    , _player           :: Player
                    , _enemies          :: [Enemy]
                    , _passedTime       :: Double
+                   , _enemySpawner     :: EnemySpawner
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show)
@@ -35,6 +36,12 @@ data Point  = Point  { _x         :: Float
                      , _y         :: Float
                      } deriving (Show)
 
+-- Contains data needed for spawning enemies
+-- only the time to next at the moment, but this could include much more
+-- (such as the enemy type, patterns, etc.)
+data EnemySpawner = EnemySpawner { _timeToNext :: Float
+                                 , _interval   :: Float } deriving (Show)
+
 --Add lenses below (must be after defining datatypes)
 --(TemplateHaskell can do this automatically with makeLenses,
 -- this will make a lens for all _ vars in the datatype )
@@ -42,6 +49,7 @@ makeLenses ''World
 makeLenses ''Player
 makeLenses ''Enemy
 makeLenses ''Point
+makeLenses ''EnemySpawner
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
@@ -50,9 +58,9 @@ initial seed = World { _rndGen         = mkStdGen seed
                      , _movementAction = NoMovement
                      , _shootAction    = DontShoot
                      , _player         = newPlayer
-                     , _enemies        = [newEnemy (Point {_x = -10, _y = -10}),
-                                          newEnemy (Point {_x = -200, _y = -100})]
+                     , _enemies        = []
                      , _passedTime     = 0
+                     , _enemySpawner   = newEnemySpawner
                      }
                       
 --Returns the starting values for a player
@@ -70,7 +78,9 @@ newEnemy p = Enemy { _enemyPos  = p
                    , _enemySize = 5
                    }
 
-
+newEnemySpawner :: EnemySpawner
+newEnemySpawner = EnemySpawner { _timeToNext = 0
+                               , _interval   = 60 }
 
 
 
