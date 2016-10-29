@@ -22,6 +22,8 @@ data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show)
 data MovementAction = NoMovement | Thrust                   deriving (Show)
 data ShootAction    = Shoot      | DontShoot                deriving (Show)
 
+data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
+
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos :: Point
                      , _playerSize:: Float
@@ -30,6 +32,8 @@ data Player = Player { _playerPos :: Point
                      , _scoreMul  :: Int
                      } deriving (Show)
 data Enemy  = Enemy  { _enemyPos  :: Point
+                     , _movementType :: EnemyMovementType 
+                     , _enemyDir  :: Float
                      , _enemySize :: Float
                      } deriving (Show)
 data Point  = Point  { _x         :: Float
@@ -72,11 +76,18 @@ newPlayer = Player { _playerPos  = Point {_x = 0, _y = 0}
                    , _scoreMul   = 1
                    }
                    
---Returns a new enemy at a given (random) point
-newEnemy :: Point -> Enemy
-newEnemy p = Enemy { _enemyPos  = p
-                   , _enemySize = 5
-                   }
+--Returns a new enemy at a given (random) point, moving in a given dir
+newEnemy :: Point -> Float -> Enemy
+newEnemy p d = Enemy { _enemyPos     = p
+                     , _enemySize    = 5
+                     , _movementType = FixedDirection
+                     , _enemyDir     = d
+                     }
+
+newFollowingEnemy :: Point -> Enemy
+newFollowingEnemy p = set movementType
+                          FollowPlayer
+                          $ newEnemy p 0
 
 newEnemySpawner :: EnemySpawner
 newEnemySpawner = EnemySpawner { _timeToNext = 0
