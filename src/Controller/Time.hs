@@ -66,12 +66,11 @@ moveEnemies = do playerPos <- use $ player.playerPos
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy playerPos e
-    = set enemyPos
-          (if e^.movementType == FixedDirection then
-               moveDir (e^.enemyDir) 5 (e^.enemyPos)
-           else
-               moveTo 5 playerPos $ e^.enemyPos)
-          e
+    = e & enemyPos .~ if e^.movementType == FixedDirection then
+                          moveDir (e^.enemyDir) 5 (e^.enemyPos)
+                      else
+                          moveTo 5 playerPos $ e^.enemyPos
+
 
 -- Move a certain amount of pixels to a goal.
 moveTo :: Float -> Point -> Point -> Point
