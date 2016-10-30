@@ -38,8 +38,8 @@ timeHandler time = execState changeWorld
 
 --Change the world in the MonadState
 changeWorld :: MonadState World m => m ()
-changeWorld = do player.playerPos.x += 0.1
-                 player.playerPos.y -= 0.1
+changeWorld = do player.playerPos.x += 0.5
+                 player.playerPos.y -= 0.5
                  spawnEnemies
                  moveEnemies
 
@@ -61,7 +61,7 @@ moveEnemies = do playerPos <- use $ player.playerPos
                  currentEnemies <- use enemies
                  let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < 40) currentEnemies
                  when (not $ null collidingEnemies) $ do
-                     enemies .= filter (not . (`elem` collidingEnemies)) currentEnemies -- Destroy any colliding enemies
+                     enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
