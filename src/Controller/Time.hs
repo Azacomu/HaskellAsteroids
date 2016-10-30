@@ -38,8 +38,8 @@ timeHandler time = execState changeWorld
 
 --Change the world in the MonadState
 changeWorld :: MonadState World m => m ()
-changeWorld = do player.playerPos.x += 1
-                 player.playerPos.y -= 1
+changeWorld = do player.playerPos.x += 0.1
+                 player.playerPos.y -= 0.1
                  spawnEnemies
                  moveEnemies
 
@@ -57,15 +57,20 @@ spawnEnemies = do spawner <- use enemySpawner
 moveEnemies :: MonadState World m => m ()
 moveEnemies = do playerPos <- use $ player.playerPos
                  enemies.traversed %= moveEnemy playerPos
+                 -- Check if any enemies collide with the player
+                 currentEnemies <- use enemies
+                 let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < 40) currentEnemies
+                 when (not $ null collidingEnemies) $ do
+                     enemies .= filter (not . (`elem` collidingEnemies)) currentEnemies -- Destroy any colliding enemies
 
--- Move a single enemy (needs the player position)
+-- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy playerPos e
     = set enemyPos
           (if e^.movementType == FixedDirection then
                moveDir (e^.enemyDir) 5 (e^.enemyPos)
            else
-               moveTo 5 playerPos (e^.enemyPos))
+               moveTo 5 playerPos $ e^.enemyPos)
           e
 
 -- Move a certain amount of pixels to a goal.

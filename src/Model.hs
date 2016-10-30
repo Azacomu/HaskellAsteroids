@@ -35,10 +35,10 @@ data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
                      , _enemyDir  :: Float
                      , _enemySize :: Float
-                     } deriving (Show)
+                     } deriving (Show, Eq)
 data Point  = Point  { _x         :: Float
                      , _y         :: Float
-                     } deriving (Show)
+                     } deriving (Show, Eq)
 
 -- Contains data needed for spawning enemies
 -- only the time to next at the moment, but this could include much more
