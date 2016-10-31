@@ -21,7 +21,7 @@ import MenuView
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world
-     = if world^.state == InMenu then
+     = if world^.gameState == InMenu then
           drawMenu horizontalResolution verticalResolution world
       else
           drawPlayer (world^.player)

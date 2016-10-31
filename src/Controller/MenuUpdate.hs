@@ -16,3 +16,8 @@ import Graphics.Gloss.Geometry.Angle
 import System.Random
 
 import Model
+
+updateMenu :: MonadState World m => m ()
+updateMenu = do shoot <- use shootAction
+                when (shoot == Shoot) $ do
+                    gameState .= InGame

@@ -41,14 +41,18 @@ timeHandler time = execState (changeWorld time)
 
 --Change the world in the MonadState
 changeWorld :: MonadState World m => Float -> m ()
-changeWorld time = do tickTime   .= time
-                      passedTime += time
-                      rotatePlayer
-                      movePlayer
-                      shootPlayer
-                      moveBullets
-                      spawnEnemies
-                      moveEnemies
+changeWorld time = do curState <- use gameState
+                      if curState == InMenu then
+                          updateMenu
+                      else do
+                          tickTime   .= time
+                          passedTime += time
+                          rotatePlayer
+                          movePlayer
+                          shootPlayer
+                          moveBullets
+                          spawnEnemies
+                          moveEnemies
 
 --Move the player if needed
 movePlayer :: MonadState World m => m ()
