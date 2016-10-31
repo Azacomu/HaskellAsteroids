@@ -24,7 +24,7 @@ draw horizontalResolution verticalResolution world
      = if world^.state == InMenu then
           drawMenu horizontalResolution verticalResolution world
       else
-          drawCircle (world^.player.playerPos) blue 20
+          drawPlayer (world^.player)
           <> drawEnemies world
           <> drawBullets world
 
