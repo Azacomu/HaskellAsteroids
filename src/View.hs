@@ -10,6 +10,7 @@ import Data.Monoid
 
 import Control.Lens
 
+import Helper
 import Model
 
 import MenuView
@@ -20,10 +21,12 @@ import MenuView
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world
-    = if world^.state == InMenu then
+     = if world^.state == InMenu then
           drawMenu horizontalResolution verticalResolution world
-      else drawCircle (world^.player.playerPos) blue 20
+      else
+          drawCircle (world^.player.playerPos) blue 20
           <> drawEnemies world
+          <> drawBullets world
 
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
@@ -36,3 +39,22 @@ drawStdCircle p = drawCircle p white 5
 drawEnemies :: World -> Picture
 drawEnemies world = pictures $ map drawEnemy (world^.enemies)
                   where drawEnemy enemy = drawCircle (enemy^.enemyPos) red 20
+
+--Returns a picture used to draw the player                  
+drawPlayer :: Player -> Picture
+drawPlayer player = drawCircle (player^.playerPos) blue 20
+                    <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
+                    
+--Draws all bullets as small lines
+drawBullets :: World -> Picture
+drawBullets world = pictures $ map drawBullet (world^.bullets)
+                  where drawBullet b = color green $ line $ path b
+                        path b = [toVector $ b^.bulPos, toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
+                        
+                  
+                  
+                  
+                  
+                  
+                  
+                  

@@ -17,6 +17,7 @@ import Graphics.Gloss.Geometry.Angle
 
 import System.Random
 
+import Helper
 import Model
 
 import Controller.MenuUpdate
@@ -26,7 +27,7 @@ import Controller.MenuUpdate
 --This is where we will change the gameworld (Update)
 --time is the passed time in seconds (gameTime)
 timeHandler :: Float -> World -> World
-timeHandler time = execState changeWorld
+timeHandler time = execState (changeWorld time)
 
 --Functions needed for using states
 --Important types:
@@ -39,11 +40,49 @@ timeHandler time = execState changeWorld
 --(Identity is a monad, that returns the normal value, runIdentity :: a)
 
 --Change the world in the MonadState
-changeWorld :: MonadState World m => m ()
-changeWorld = do player.playerPos.x += 0.5
-                 player.playerPos.y -= 0.5
-                 spawnEnemies
-                 moveEnemies
+changeWorld :: MonadState World m => Float -> m ()
+changeWorld time = do tickTime   .= time
+                      passedTime += time
+                      rotatePlayer
+                      movePlayer
+                      shootPlayer
+                      moveBullets
+                      spawnEnemies
+                      moveEnemies
+
+--Move the player if needed
+movePlayer :: MonadState World m => m ()
+movePlayer = do moveAction <- use movementAction
+                when (moveAction == Thrust) $ do
+                    p <- use player
+                    player.playerPos .= moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+ 
+--Rotate the player if needed 
+rotatePlayer :: MonadState World m => m ()
+rotatePlayer = do rAction <- use rotateAction
+                  speed   <- use $ player.playerSpeed
+                  case rAction of
+                    RotateLeft  -> player.playerDir -= (speed / 180) * pi
+                    RotateRight -> player.playerDir += (speed / 180) * pi 
+                    NoRotation  -> return ()
+
+--Shoots if the player wants to shoot and the time since the last shot is long enough                    
+shootPlayer :: MonadState World m => m ()
+shootPlayer = do p     <- use player
+                 shoot <- use shootAction
+                 player.shootTime -= 1
+                 when (shoot == Shoot && p^.shootTime <= 0) $ do
+                    bullets          %= (newBullet (p^.playerPos) (p^.playerDir) :)
+                    player.shootTime .= p^.baseShootTime
+                    
+--Moves all bullets
+moveBullets :: MonadState World m => m ()
+moveBullets = bullets.traversed %= moveBullet
+
+--Moves a bullet
+moveBullet :: Bullet -> Bullet
+moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
+                    
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
@@ -73,22 +112,6 @@ moveEnemy playerPos e
                           moveDir (e^.enemyDir) 5 (e^.enemyPos)
                       else
                           moveTo 5 playerPos $ e^.enemyPos
-
--- Move a certain amount of pixels to a goal.
-moveTo :: Float -> Point -> Point -> Point
-moveTo speed goal start = moveDir (pointDirection start goal) speed start
-
--- Move a certain amount of pixels in a given direction
-moveDir :: Float -> Float -> Point -> Point
-moveDir dir speed start = Point { _x = start^.x + speed * sin dir, _y = start^.y + speed * cos dir }
-
--- Get the distance between two points
-pointDistance :: Point -> Point -> Float
-pointDistance p1 p2 = sqrt $ (p2^.x - p1^.x) ** 2 + (p2^.y - p1^.y) ** 2
-
--- Get the direction between two points
-pointDirection :: Point -> Point -> Float
-pointDirection p1 p2 = atan2 (p2^.x - p1^.x) (p2^.y - p1^.y)
 
 -- Get a random point at a certain minimum distance from the player
 getRandomSpawnPoint :: MonadState World m => m (Point)
