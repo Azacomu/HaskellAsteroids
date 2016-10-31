@@ -12,15 +12,19 @@ import Control.Lens
 
 import Model
 
+import MenuView
+
 -- | Drawing
 
 --This is where we convert all different elements in the passed world to a Picture
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world
-    = drawCircle (world^.player.playerPos) blue 20
-      <> drawEnemies world
-    
+    = if world^.state == InMenu then
+          drawMenu horizontalResolution verticalResolution world
+      else drawCircle (world^.player.playerPos) blue 20
+          <> drawEnemies world
+
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
 drawCircle p c r = translate (p^.x) (p^.y) (color c (circle r))

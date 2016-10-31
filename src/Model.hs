@@ -8,7 +8,8 @@ import System.Random
 -- | Game state
 
 --Basic data of World, add other datatypes used below
-data World = World { _rndGen           :: StdGen
+data World = World { _state            :: State
+                   , _rndGen           :: StdGen
                    , _rotateAction     :: RotateAction
                    , _movementAction   :: MovementAction
                    , _shootAction      :: ShootAction
@@ -23,6 +24,7 @@ data MovementAction = NoMovement | Thrust                   deriving (Show)
 data ShootAction    = Shoot      | DontShoot                deriving (Show)
 
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
+data State             = InMenu | InGame                    deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos :: Point
@@ -57,7 +59,8 @@ makeLenses ''EnemySpawner
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
-initial seed = World { _rndGen         = mkStdGen seed
+initial seed = World { _state          = InGame
+                     , _rndGen         = mkStdGen seed
                      , _rotateAction   = NoRotation
                      , _movementAction = NoMovement
                      , _shootAction    = DontShoot

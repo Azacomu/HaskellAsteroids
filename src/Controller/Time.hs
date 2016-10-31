@@ -19,6 +19,8 @@ import System.Random
 
 import Model
 
+import Controller.MenuUpdate
+
 -- | Time handling
 
 --This is where we will change the gameworld (Update)
@@ -61,6 +63,7 @@ moveEnemies = do playerPos <- use $ player.playerPos
                  currentEnemies <- use enemies
                  let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < 40) currentEnemies
                  when (not $ null collidingEnemies) $ do
+                     player.scoreMul .= 1
                      enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)
@@ -70,7 +73,6 @@ moveEnemy playerPos e
                           moveDir (e^.enemyDir) 5 (e^.enemyPos)
                       else
                           moveTo 5 playerPos $ e^.enemyPos
-
 
 -- Move a certain amount of pixels to a goal.
 moveTo :: Float -> Point -> Point -> Point
