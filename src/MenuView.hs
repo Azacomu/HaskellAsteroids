@@ -16,19 +16,19 @@ drawMenu horizontalResolution verticalResolution world
                   scaleBoth 0.5 $ text "Hasteroids")
           <> drawOptions
          --(color white $ translate 10 (textBaseH * (-0.8) - 20) $ scaleBoth 0.3 $ text ">Play")
-    where worldScale  = verticalResolution / 576
-          top         = verticalResolution / 2
-          left        = horizontalResolution / (-2)
-          textBaseH   = 110
-          options     = ["Play", "Quit"]
-          drawOptions =
-               fst $ foldl (\(picture, i) option ->
-                                 (picture
-                                  <> (translate 10
-                                                (-10
-                                                 - textBaseH * (0.5 + 0.3 * i)
-                                                 - 10 * i)
-                                                $ scaleBoth 0.3 $ text option),
-                                  i + 1))
-                           (blank, 1)
-                           options
+    where worldScale      = verticalResolution / 576
+          top             = verticalResolution / 2
+          left            = horizontalResolution / (-2)
+          textBaseH       = 110
+          options         = ["Play", "Quit"]
+          (drawOptions,_) =
+               foldl (\(picture, i) option ->
+                           (picture
+                            <> (translate 10
+                                          (-10
+                                           - textBaseH * (0.5 + 0.3 * i)
+                                           - 10 * i)
+                                          $ scaleBoth 0.3 $ text option),
+                            i + 1))
+                     (blank, 1)
+                     options
