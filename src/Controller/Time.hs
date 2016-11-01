@@ -20,6 +20,8 @@ import System.Random
 import Helper
 import Model
 
+import Controller.MenuUpdate
+
 -- | Time handling
 
 --This is where we will change the gameworld (Update)
@@ -39,14 +41,18 @@ timeHandler time = execState (changeWorld time)
 
 --Change the world in the MonadState
 changeWorld :: MonadState World m => Float -> m ()
-changeWorld time = do tickTime   .= time
-                      passedTime += time
-                      rotatePlayer
-                      movePlayer
-                      shootPlayer
-                      moveBullets
-                      spawnEnemies
-                      moveEnemies
+changeWorld time = do curState <- use gameState
+                      if curState == InMenu then
+                          updateMenu
+                      else do
+                          tickTime   .= time
+                          passedTime += time
+                          rotatePlayer
+                          movePlayer
+                          shootPlayer
+                          moveBullets
+                          spawnEnemies
+                          moveEnemies
 
 --Move the player if needed
 movePlayer :: MonadState World m => m ()
@@ -100,6 +106,7 @@ moveEnemies = do playerPos <- use $ player.playerPos
                  currentEnemies <- use enemies
                  let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < 40) currentEnemies
                  when (not $ null collidingEnemies) $ do
+                     player.scoreMul .= 1
                      enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)

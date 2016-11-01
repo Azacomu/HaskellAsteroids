@@ -29,5 +29,6 @@ eventHandler (EventKey (SpecialKey KeySpace) Down _ _)
     = shootAction .~ Shoot
 eventHandler (EventKey (SpecialKey KeySpace) Up   _ _)
     = shootAction .~ DontShoot
+
 eventHandler _
     = id

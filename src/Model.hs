@@ -8,7 +8,8 @@ import System.Random
 -- | Game state
 
 --Basic data of World, add other datatypes used below
-data World = World { _rndGen           :: StdGen
+data World = World { _gameState        :: GameState
+                   , _rndGen           :: StdGen
                    , _rotateAction     :: RotateAction
                    , _movementAction   :: MovementAction
                    , _shootAction      :: ShootAction
@@ -25,6 +26,7 @@ data MovementAction = NoMovement | Thrust                   deriving (Show, Eq)
 data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
 
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
+data GameState         = InMenu | InGame                    deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos   :: Point
@@ -68,7 +70,8 @@ makeLenses ''Bullet
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
-initial seed = World { _rndGen         = mkStdGen seed
+initial seed = World { _gameState      = InMenu
+                     , _rndGen         = mkStdGen seed
                      , _rotateAction   = NoRotation
                      , _movementAction = NoMovement
                      , _shootAction    = DontShoot
