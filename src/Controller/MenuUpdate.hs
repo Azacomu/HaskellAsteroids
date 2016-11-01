@@ -25,15 +25,15 @@ menuOptions = ["Play", "Quit"]
 
 updateMenu :: MonadState World m => m ()
 updateMenu = do selectsPrev <- use doesSelectPrev
-                when selectsPrev $ do
+                when selectsPrev $
                     menu.selectionOption %= (\o -> if o > 0 then o - 1 else o)
                 selectsNext <- use doesSelectNext
-                when selectsNext $ do
+                when selectsNext $
                     menu.selectionOption %= (\o -> if o + 1 < (length menuOptions) then o + 1 else o)
                 confirms    <- use doesConfirm
                 nowSelected <- use $ menu.selectionOption
-                when confirms $ do
+                when confirms $
                     if nowSelected == 0 then
                         gameState .= InGame
-                    else when (nowSelected == 1) $ do
+                    else when (nowSelected == 1) $
                         unsafePerformIO exitSuccess
