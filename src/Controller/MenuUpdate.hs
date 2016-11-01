@@ -18,6 +18,6 @@ import System.Random
 import Model
 
 updateMenu :: MonadState World m => m ()
-updateMenu = do shoot <- use shootAction
-                when (shoot == Shoot) $ do
+updateMenu = do confirms <- use doesConfirm
+                when confirms $ do
                     gameState .= InGame

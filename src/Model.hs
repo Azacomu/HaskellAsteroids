@@ -13,6 +13,9 @@ data World = World { _gameState        :: GameState
                    , _rotateAction     :: RotateAction
                    , _movementAction   :: MovementAction
                    , _shootAction      :: ShootAction
+                   , _doesConfirm      :: Bool
+                   , _doesSelectPrev   :: Bool
+                   , _doesSelectNext   :: Bool
                    , _player           :: Player
                    , _enemies          :: [Enemy]
                    , _passedTime       :: Float
@@ -75,6 +78,9 @@ initial seed = World { _gameState      = InMenu
                      , _rotateAction   = NoRotation
                      , _movementAction = NoMovement
                      , _shootAction    = DontShoot
+                     , _doesConfirm    = False
+                     , _doesSelectPrev = False
+                     , _doesSelectNext = False
                      , _player         = newPlayer
                      , _enemies        = []
                      , _passedTime     = 0

@@ -22,11 +22,15 @@ eventHandler (EventKey (SpecialKey KeyRight) Down _ _)
 eventHandler (EventKey (SpecialKey KeyRight) Up   _ _)
     = rotateAction .~ NoRotation
 eventHandler (EventKey (SpecialKey KeyUp   ) Down _ _)
-    = movementAction .~ Thrust
+    =   (movementAction .~ Thrust)
+      . (doesSelectPrev .~ True)
 eventHandler (EventKey (SpecialKey KeyUp   ) Up   _ _)
     = movementAction .~ NoMovement
+eventHandler (EventKey (SpecialKey KeyDown ) Down _ _)
+    = doesSelectNext .~ True
 eventHandler (EventKey (SpecialKey KeySpace) Down _ _)
-    = shootAction .~ Shoot
+    =   (shootAction .~ Shoot)
+      . (doesConfirm .~ True)
 eventHandler (EventKey (SpecialKey KeySpace) Up   _ _)
     = shootAction .~ DontShoot
 
