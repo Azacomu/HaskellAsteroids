@@ -5,10 +5,14 @@ module Model where
 import Control.Lens
 import System.Random
 
+import Control.Monad
+import Control.Monad.State
+
 -- | Game state
 
 --Basic data of World, add other datatypes used below
 data World = World { _gameState        :: GameState
+                   , _menu             :: Menu
                    , _rndGen           :: StdGen
                    , _rotateAction     :: RotateAction
                    , _movementAction   :: MovementAction
@@ -54,6 +58,8 @@ data Bullet = Bullet { _bulPos    :: Point
 data Point  = Point  { _x         :: Float
                      , _y         :: Float
                      } deriving (Show, Eq)
+data Menu   = Menu   { _selectionOption :: Int
+                     } deriving (Show, Eq)
 
 -- Contains data needed for spawning enemies
 -- only the time to next at the moment, but this could include much more
@@ -70,10 +76,12 @@ makeLenses ''Enemy
 makeLenses ''Point
 makeLenses ''EnemySpawner
 makeLenses ''Bullet
+makeLenses ''Menu
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
 initial seed = World { _gameState      = InMenu
+                     , _menu           = newMenu
                      , _rndGen         = mkStdGen seed
                      , _rotateAction   = NoRotation
                      , _movementAction = NoMovement
@@ -125,4 +133,6 @@ newBullet p d = Bullet { _bulPos   = p
                        , _bulSpeed = 10
                        , _bulDir   = d
                        }
-                       
+
+newMenu :: Menu
+newMenu = Menu { _selectionOption = 0 }

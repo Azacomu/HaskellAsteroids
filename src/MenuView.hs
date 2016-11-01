@@ -6,6 +6,7 @@ import Data.Monoid
 
 import Control.Lens
 import Helper
+import Controller.MenuUpdate
 
 import Model
 
@@ -15,20 +16,22 @@ drawMenu horizontalResolution verticalResolution world
              (translate 10 (textBaseH * (-0.5) - 10) $
                   scaleBoth 0.5 $ text "Hasteroids")
           <> drawOptions
-         --(color white $ translate 10 (textBaseH * (-0.8) - 20) $ scaleBoth 0.3 $ text ">Play")
     where worldScale      = verticalResolution / 576
           top             = verticalResolution / 2
           left            = horizontalResolution / (-2)
           textBaseH       = 110
-          options         = ["Play", "Quit"]
-          (drawOptions,_) =
-               foldl (\(picture, i) option ->
-                           (picture
-                            <> (translate 10
-                                          (-10
-                                           - textBaseH * (0.5 + 0.3 * i)
-                                           - 10 * i)
-                                          $ scaleBoth 0.3 $ text option),
-                            i + 1))
-                     (blank, 1)
-                     options
+          (drawOptions,_)
+              = foldl (\(picture, i) option ->
+                            (picture
+                             <> (translate 10
+                                           (-25
+                                            - textBaseH * (0.8 + 0.3 * (fromIntegral i))
+                                            - 15 * (fromIntegral i))
+                                            $ scaleBoth 0.3
+                                            $ text $ optionText option i),
+                             i + 1))
+                      (blank, 0)
+                      menuOptions
+              where optionText :: String -> Int -> String
+                    optionText option num | num == world^.menu.selectionOption = '>' : option
+                                          | otherwise                          = option

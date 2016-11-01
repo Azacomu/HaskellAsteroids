@@ -33,6 +33,8 @@ eventHandler (EventKey (SpecialKey KeySpace) Down _ _)
       . (doesConfirm .~ True)
 eventHandler (EventKey (SpecialKey KeySpace) Up   _ _)
     = shootAction .~ DontShoot
+eventHandler (EventKey (SpecialKey KeyEnter) Down _ _)
+    = doesConfirm .~ True
 
 eventHandler _
     = id
