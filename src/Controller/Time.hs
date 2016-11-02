@@ -11,6 +11,7 @@ import Control.Monad
 import Control.Monad.State
 
 import Data.List
+import Data.Maybe
 
 import Graphics.Gloss hiding (Point)
 import Graphics.Gloss.Geometry.Angle
@@ -51,6 +52,7 @@ changeWorld time = do curState <- use gameState
                           movePlayer
                           shootPlayer
                           moveBullets
+                          updateBullets
                           spawnEnemies
                           moveEnemies
                       resetKeys
@@ -94,6 +96,24 @@ moveBullets = bullets.traversed %= moveBullet
 moveBullet :: Bullet -> Bullet
 moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
                     
+--Checks whether bullets collide and updates the lifetime and deletes the bullet if it times out
+updateBullets :: MonadState World m => m ()
+updateBullets = do es <- use enemies
+                   bs <- use bullets
+                   let col       = unzip $ mapMaybe (collideWith es) bs
+                   let infst x   = x `elem` (fst col)
+                   let insnd x   = x `elem` (snd col)
+                   sMul         <- use $ player.scoreMul
+                   player.score += length (fst col) * sMul
+                   bullets      .= filter (not . infst) bs
+                   enemies      .= filter (not . insnd) es
+
+--Checks if there is a collision and returns it, only returns one collision, as one bullet can only collide with one enemy
+collideWith :: [Enemy] -> Bullet -> Maybe (Bullet, Enemy)
+collideWith enemies b | filtered == [] = Nothing
+                      | otherwise      = Just (b, (head filtered))
+                      where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < 20) enemies
+          
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()

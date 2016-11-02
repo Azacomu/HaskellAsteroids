@@ -45,15 +45,17 @@ drawEnemies world = pictures $ map drawEnemy (world^.enemies)
 drawPlayer :: Player -> Picture
 drawPlayer player = drawCircle (player^.playerPos) blue 20
                     <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
+                    <> drawScore (player^.score)
                     
 --Draws all bullets as small lines
 drawBullets :: World -> Picture
 drawBullets world = pictures $ map drawBullet (world^.bullets)
                   where drawBullet b = color green $ line $ path b
                         path b = [toVector $ b^.bulPos, toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
-                        
-                  
-                  
+
+--Draws score on the screen (Temp, must be improved)                        
+drawScore :: Int -> Picture
+drawScore x = Color white (text $ show x)
                   
                   
                   

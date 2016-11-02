@@ -60,7 +60,10 @@ data Point  = Point  { _x         :: Float
                      } deriving (Show, Eq)
 data Menu   = Menu   { _selectionOption :: Int
                      } deriving (Show, Eq)
-
+data Collision = Collision { _b :: Bullet
+                           , _e :: Enemy
+                           } deriving (Show)
+                     
 -- Contains data needed for spawning enemies
 -- only the time to next at the moment, but this could include much more
 -- (such as the enemy type, patterns, etc.)
@@ -77,6 +80,7 @@ makeLenses ''Point
 makeLenses ''EnemySpawner
 makeLenses ''Bullet
 makeLenses ''Menu
+makeLenses ''Collision
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
@@ -136,3 +140,13 @@ newBullet p d = Bullet { _bulPos   = p
 
 newMenu :: Menu
 newMenu = Menu { _selectionOption = 0 }
+
+--Returns a collision with given vars
+newCollision b e = Collision { _b = b, _e = e}
+
+
+
+
+
+
+
