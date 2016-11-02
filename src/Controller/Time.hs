@@ -103,10 +103,13 @@ updateBullets = do es <- use enemies
                    let col       = unzip $ mapMaybe (collideWith es) bs
                    let infst x   = x `elem` (fst col)
                    let insnd x   = x `elem` (snd col)
+                   let timeout b = b^.bulTime <= 0
                    sMul         <- use $ player.scoreMul
                    player.score += length (fst col) * sMul
-                   bullets      .= filter (not . infst) bs
+                   bullets      .= filter (\b -> not (infst b || timeout b)) bs
                    enemies      .= filter (not . insnd) es
+                   bullets.traversed.bulTime -= 1
+                   
 
 --Checks if there is a collision and returns it, only returns one collision, as one bullet can only collide with one enemy
 collideWith :: [Enemy] -> Bullet -> Maybe (Bullet, Enemy)

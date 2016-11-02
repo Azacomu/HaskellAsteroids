@@ -54,6 +54,7 @@ data Enemy  = Enemy  { _enemyPos  :: Point
 data Bullet = Bullet { _bulPos    :: Point
                      , _bulSpeed  :: Float
                      , _bulDir    :: Float
+                     , _bulTime   :: Float
                      } deriving (Show, Eq)
 data Point  = Point  { _x         :: Float
                      , _y         :: Float
@@ -136,6 +137,7 @@ newBullet :: Point -> Float -> Bullet
 newBullet p d = Bullet { _bulPos   = p
                        , _bulSpeed = 10
                        , _bulDir   = d
+                       , _bulTime  = 40
                        }
 
 newMenu :: Menu
