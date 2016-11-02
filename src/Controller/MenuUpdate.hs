@@ -15,9 +15,25 @@ import Graphics.Gloss.Geometry.Angle
 
 import System.Random
 
+import System.IO.Unsafe
+import System.Exit
+
 import Model
 
+menuOptions :: [String]
+menuOptions = ["Play", "Quit"]
+
 updateMenu :: MonadState World m => m ()
-updateMenu = do shoot <- use shootAction
-                when (shoot == Shoot) $ do
-                    gameState .= InGame
+updateMenu = do selectsPrev <- use doesSelectPrev
+                when selectsPrev $
+                    menu.selectionOption %= (\o -> if o > 0 then o - 1 else o)
+                selectsNext <- use doesSelectNext
+                when selectsNext $
+                    menu.selectionOption %= (\o -> if o + 1 < (length menuOptions) then o + 1 else o)
+                confirms    <- use doesConfirm
+                nowSelected <- use $ menu.selectionOption
+                when confirms $
+                    if nowSelected == 0 then
+                        gameState .= InGame
+                    else when (nowSelected == 1) $
+                        unsafePerformIO exitSuccess

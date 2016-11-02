@@ -53,6 +53,13 @@ changeWorld time = do curState <- use gameState
                           moveBullets
                           spawnEnemies
                           moveEnemies
+                      resetKeys
+
+--Reset some keys that should only be handled on press
+resetKeys :: MonadState World m => m()
+resetKeys = do doesConfirm    .= False
+               doesSelectPrev .= False
+               doesSelectNext .= False
 
 --Move the player if needed
 movePlayer :: MonadState World m => m ()

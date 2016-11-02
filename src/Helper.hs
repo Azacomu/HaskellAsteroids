@@ -26,9 +26,9 @@ pointDistance p1 p2 = sqrt $ (p2^.x - p1^.x) ** 2 + (p2^.y - p1^.y) ** 2
 pointDirection :: Point -> Point -> Float
 pointDirection p1 p2 = atan2 (p2^.x - p1^.x) (p2^.y - p1^.y)
 
-
-
-
+-- Scale both the horizontal and vertical resolution of a picture
+scaleBoth :: Float -> Picture -> Picture
+scaleBoth s = scale s s
 
 
 

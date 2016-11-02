@@ -8,6 +8,7 @@ import Graphics.Gloss hiding (Point)
 import Graphics.Gloss.Geometry.Angle
 import Data.Monoid
 
+
 import Control.Lens
 
 import Helper
