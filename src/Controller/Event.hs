@@ -1,5 +1,5 @@
 module Controller.Event (
-    eventHandler
+    eventHandler, eventHandlerIO
 ) where
 
 import Control.Lens
@@ -10,6 +10,9 @@ import Model
 
 -- | Event handling
 
+--Returns a IO version of the eventHandler
+eventHandlerIO :: Event -> World -> IO World
+eventHandlerIO e w = return $ eventHandler e w
 
 --Returns a world with the rotateAction/movementAction changed to needed value
 eventHandler :: Event -> World -> World

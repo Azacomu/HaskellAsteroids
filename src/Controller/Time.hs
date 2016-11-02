@@ -27,8 +27,8 @@ import Controller.MenuUpdate
 
 --This is where we will change the gameworld (Update)
 --time is the passed time in seconds (gameTime)
-timeHandler :: Float -> World -> World
-timeHandler time = execState (changeWorld time)
+timeHandler :: Float -> World -> IO World
+timeHandler time world = return $ execState (changeWorld time) world
 
 --Functions needed for using states
 --Important types:
