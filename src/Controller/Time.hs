@@ -56,6 +56,7 @@ changeWorld time = do curState <- use gameState
                           spawnEnemies
                           moveEnemies
                       resetKeys
+                      handleStars
 
 --Reset some keys that should only be handled on press
 resetKeys :: MonadState World m => m()
@@ -143,6 +144,19 @@ moveEnemy playerPos e
                           moveDir (e^.enemyDir) 5 (e^.enemyPos)
                       else
                           moveTo 5 playerPos $ e^.enemyPos
+
+starSpawnChance :: Float
+starSpawnChance = 0.7
+
+-- Move stars and spawn new ones
+handleStars :: MonadState World m => m ()
+handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
+                 stars %= filter (\star -> star^.starPos.x > -1000)
+                 shouldSpawnStar <- getRandomR (0 :: Float, 1)
+                 when (shouldSpawnStar < starSpawnChance) $ do
+                     newStarPos      <- getRandomR (-1000, 1000)
+                     thisSpeed       <- getRandomR (1, 6)
+                     stars %= (newStar (Point { _x = 1000, _y = newStarPos}) thisSpeed :)
 
 -- Get a random point at a certain minimum distance from the player
 getRandomSpawnPoint :: MonadState World m => m (Point)

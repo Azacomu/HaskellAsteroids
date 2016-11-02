@@ -28,6 +28,7 @@ data World = World { _gameState        :: GameState
                    , _tickTime         :: Float
                    , _bonuses          :: [Bonus]
                    , _bonusSpawner     :: Spawner
+                   , _stars            :: [Star]
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
@@ -64,6 +65,9 @@ data Menu   = Menu   { _selectionOption :: Int
                      } deriving (Show, Eq)
 data Bonus  = Bonus  { _bonusPos  :: Point
                      } deriving (Show, Eq)
+data Star   = Star   { _starPos   :: Point
+                     , _starSpeed :: Float
+                     } deriving (Show, Eq)
 
 -- Contains data needed for spawning things
 -- only the time to next at the moment, but this could include much more
@@ -82,6 +86,7 @@ makeLenses ''Spawner
 makeLenses ''Bullet
 makeLenses ''Menu
 makeLenses ''Bonus
+makeLenses ''Star
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
@@ -102,6 +107,7 @@ initial seed = World { _gameState      = InMenu
                      , _bullets        = []
                      , _tickTime       = 0
                      , _bonuses        = []
+                     , _stars          = []
                      }
                       
 --Returns the starting values for a player
@@ -146,3 +152,8 @@ newBullet p d = Bullet { _bulPos   = p
 
 newMenu :: Menu
 newMenu = Menu { _selectionOption = 0 }
+
+newStar :: Point -> Float -> Star
+newStar p s = Star { _starPos   = p
+                   , _starSpeed = s
+                   }

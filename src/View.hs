@@ -22,9 +22,10 @@ import MenuView
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> Picture
 draw horizontalResolution verticalResolution world
-     = if world^.gameState == InMenu then
+     = drawStars world <>
+       if world^.gameState == InMenu then
           drawMenu horizontalResolution verticalResolution world
-      else
+       else
           drawPlayer (world^.player)
           <> drawEnemies world
           <> drawBullets world
@@ -33,6 +34,9 @@ draw horizontalResolution verticalResolution world
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
 drawCircle p c r = translate (p^.x) (p^.y) (color c (circle r))
+
+drawCircleSolid :: Point -> Color -> Float -> Picture
+drawCircleSolid p c r = translate (p^.x) (p^.y) (color c (circleSolid r))
 
 --Returns a standard circle around given point, useful for testing
 drawStdCircle :: Point -> Picture
@@ -57,8 +61,6 @@ drawBonuses :: World -> Picture
 drawBonuses world = pictures $ map drawBonus (world^.bonuses)
                   where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow 10
                   
-                  
-                  
-                  
-                  
-                  
+drawStars :: World -> Picture
+drawStars world = pictures $ map drawStar (world^.stars)
+                where drawStar star = drawCircleSolid (star^.starPos) (makeColor 1 1 1 $ star^.starSpeed / 7) (star^.starSpeed)
