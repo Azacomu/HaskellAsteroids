@@ -51,6 +51,8 @@ changeWorld time = do curState <- use gameState
                           movePlayer
                           shootPlayer
                           moveBullets
+                          spawnBonuses
+                          pickupBonuses
                           spawnEnemies
                           moveEnemies
                       resetKeys
@@ -93,7 +95,25 @@ moveBullets = bullets.traversed %= moveBullet
 --Moves a bullet
 moveBullet :: Bullet -> Bullet
 moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
-                    
+
+-- Spawn new bonuses now and then
+spawnBonuses :: MonadState World m => m ()
+spawnBonuses = do spawner <- use bonusSpawner
+                  bonusSpawner.timeToNext -= 1
+                  when (spawner^.timeToNext <= 0) $ do
+                      playerPos <- use $ player.playerPos
+                      spawnPos <- getRandomSpawnPoint
+                      bonuses %= (newBonus spawnPos :)
+                      bonusSpawner.timeToNext += spawner^.interval
+
+-- Have the player pick up bonuses
+pickupBonuses :: MonadState World m => m ()
+pickupBonuses = do playerPos <- use $ player.playerPos
+                   currentBonuses <- use bonuses
+                   let collidingBonuses = filter (\b -> pointDistance playerPos (b^.bonusPos) < 40) currentBonuses
+                   when (not $ null collidingBonuses) $ do
+                       player.scoreMul += 1
+                       bonuses %= filter (not . (`elem` collidingBonuses)) -- Destroy any colliding enemies
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()

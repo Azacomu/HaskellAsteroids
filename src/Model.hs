@@ -23,9 +23,11 @@ data World = World { _gameState        :: GameState
                    , _player           :: Player
                    , _enemies          :: [Enemy]
                    , _passedTime       :: Float
-                   , _enemySpawner     :: EnemySpawner
+                   , _enemySpawner     :: Spawner
                    , _bullets          :: [Bullet]
                    , _tickTime         :: Float
+                   , _bonuses          :: [Bonus]
+                   , _bonusSpawner     :: Spawner
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
@@ -60,12 +62,14 @@ data Point  = Point  { _x         :: Float
                      } deriving (Show, Eq)
 data Menu   = Menu   { _selectionOption :: Int
                      } deriving (Show, Eq)
+data Bonus  = Bonus  { _bonusPos  :: Point
+                     } deriving (Show, Eq)
 
--- Contains data needed for spawning enemies
+-- Contains data needed for spawning things
 -- only the time to next at the moment, but this could include much more
 -- (such as the enemy type, patterns, etc.)
-data EnemySpawner = EnemySpawner { _timeToNext :: Float
-                                 , _interval   :: Float } deriving (Show)
+data Spawner = Spawner { _timeToNext :: Float
+                       , _interval   :: Float } deriving (Show)
 
 --Add lenses below (must be after defining datatypes)
 --(TemplateHaskell can do this automatically with makeLenses,
@@ -74,9 +78,10 @@ makeLenses ''World
 makeLenses ''Player
 makeLenses ''Enemy
 makeLenses ''Point
-makeLenses ''EnemySpawner
+makeLenses ''Spawner
 makeLenses ''Bullet
 makeLenses ''Menu
+makeLenses ''Bonus
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
@@ -92,9 +97,11 @@ initial seed = World { _gameState      = InMenu
                      , _player         = newPlayer
                      , _enemies        = []
                      , _passedTime     = 0
-                     , _enemySpawner   = newEnemySpawner
+                     , _enemySpawner   = newSpawner 60
+                     , _bonusSpawner   = newSpawner 240
                      , _bullets        = []
                      , _tickTime       = 0
+                     , _bonuses        = []
                      }
                       
 --Returns the starting values for a player
@@ -123,9 +130,12 @@ newFollowingEnemy p = set movementType
                           FollowPlayer
                           $ newEnemy p 0
 
-newEnemySpawner :: EnemySpawner
-newEnemySpawner = EnemySpawner { _timeToNext = 0
-                               , _interval   = 60 }
+newSpawner :: Float -> Spawner
+newSpawner interval = Spawner { _timeToNext = 0
+                              , _interval   = interval }
+
+newBonus :: Point -> Bonus
+newBonus position = Bonus { _bonusPos = position }
 
 --Returns a new Bullet with given position and direction                               
 newBullet :: Point -> Float -> Bullet

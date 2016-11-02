@@ -28,6 +28,7 @@ draw horizontalResolution verticalResolution world
           drawPlayer (world^.player)
           <> drawEnemies world
           <> drawBullets world
+          <> drawBonuses world
 
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
@@ -52,7 +53,9 @@ drawBullets world = pictures $ map drawBullet (world^.bullets)
                   where drawBullet b = color green $ line $ path b
                         path b = [toVector $ b^.bulPos, toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
                         
-                  
+drawBonuses :: World -> Picture
+drawBonuses world = pictures $ map drawBonus (world^.bonuses)
+                  where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow 10
                   
                   
                   
