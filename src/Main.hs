@@ -18,6 +18,7 @@ import Config
 import Model
 import View
 import Controller
+import Highscores
 
 -- | Main
 
