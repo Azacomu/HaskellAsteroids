@@ -44,11 +44,11 @@ drawStdCircle p = drawCircle p white 5
 
 drawEnemies :: World -> Picture
 drawEnemies world = pictures $ map drawEnemy (world^.enemies)
-                  where drawEnemy enemy = drawCircle (enemy^.enemyPos) red 20
+                  where drawEnemy enemy = drawCircle (enemy^.enemyPos) red (enemy^.enemySize)
 
 --Returns a picture used to draw the player                  
 drawPlayer :: Player -> Picture
-drawPlayer player = drawCircle (player^.playerPos) blue 20
+drawPlayer player = drawCircle (player^.playerPos) blue (player^.playerSize)
                     <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
                     
 --Draws all bullets as small lines

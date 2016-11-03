@@ -113,7 +113,7 @@ initial seed = World { _gameState      = InMenu
 --Returns the starting values for a player
 newPlayer :: Player
 newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
-                   , _playerSize    = 10
+                   , _playerSize    = 20
                    , _playerSpeed   = 5
                    , _playerDir     = 0
                    , _lives         = 3
@@ -126,7 +126,7 @@ newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
 --Returns a new enemy at a given (random) point, moving in a given dir
 newEnemy :: Point -> Float -> Enemy
 newEnemy p d = Enemy { _enemyPos     = p
-                     , _enemySize    = 5
+                     , _enemySize    = 15
                      , _movementType = FixedDirection
                      , _enemyDir     = d
                      }

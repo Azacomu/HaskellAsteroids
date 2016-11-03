@@ -128,11 +128,12 @@ spawnEnemies = do spawner <- use enemySpawner
 
 -- Move the enemies in the world
 moveEnemies :: MonadState World m => m ()
-moveEnemies = do playerPos <- use $ player.playerPos
+moveEnemies = do playerPos  <- use $ player.playerPos
+                 playerSize <- use $ player.playerSize
                  enemies.traversed %= moveEnemy playerPos
                  -- Check if any enemies collide with the player
                  currentEnemies <- use enemies
-                 let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < 40) currentEnemies
+                 let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
                  when (not $ null collidingEnemies) $ do
                      player.scoreMul .= 1
                      enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
