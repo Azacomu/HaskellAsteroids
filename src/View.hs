@@ -59,7 +59,7 @@ drawBullets world = pictures $ map drawBullet (world^.bullets)
                         
 drawBonuses :: World -> Picture
 drawBonuses world = pictures $ map drawBonus (world^.bonuses)
-                  where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow 10
+                  where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow bonusSize
                   
 drawStars :: World -> Picture
 drawStars world = pictures $ map drawStar (world^.stars)

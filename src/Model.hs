@@ -143,6 +143,10 @@ newSpawner interval = Spawner { _timeToNext = 0
 newBonus :: Point -> Bonus
 newBonus position = Bonus { _bonusPos = position }
 
+--The bonus size is always the same
+bonusSize :: Float
+bonusSize = 8
+
 --Returns a new Bullet with given position and direction                               
 newBullet :: Point -> Float -> Bullet
 newBullet p d = Bullet { _bulPos   = p

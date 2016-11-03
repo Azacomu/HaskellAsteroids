@@ -109,9 +109,10 @@ spawnBonuses = do spawner <- use bonusSpawner
 
 -- Have the player pick up bonuses
 pickupBonuses :: MonadState World m => m ()
-pickupBonuses = do playerPos <- use $ player.playerPos
+pickupBonuses = do playerPos  <- use $ player.playerPos
+                   playerSize <- use $ player.playerSize
                    currentBonuses <- use bonuses
-                   let collidingBonuses = filter (\b -> pointDistance playerPos (b^.bonusPos) < 40) currentBonuses
+                   let collidingBonuses = filter (\b -> pointDistance playerPos (b^.bonusPos) < bonusSize + playerSize) currentBonuses
                    when (not $ null collidingBonuses) $ do
                        player.scoreMul += 1
                        bonuses %= filter (not . (`elem` collidingBonuses)) -- Destroy any colliding enemies
