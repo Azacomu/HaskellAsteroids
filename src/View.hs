@@ -44,7 +44,7 @@ drawStdCircle p = drawCircle p white 5
 
 drawEnemies :: World -> Picture
 drawEnemies world = pictures $ map drawEnemy (world^.enemies)
-                  where drawEnemy enemy = drawCircle (enemy^.enemyPos) red (enemy^.enemySize)
+                  where drawEnemy enemy = translate (enemy^.enemyPos.x) (enemy^.enemyPos.y) $ enemy^.enemyPicture--drawCircle (enemy^.enemyPos) red (enemy^.enemySize)
 
 --Returns a picture used to draw the player                  
 drawPlayer :: Player -> Picture

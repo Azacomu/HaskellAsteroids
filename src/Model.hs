@@ -8,6 +8,8 @@ import System.Random
 import Control.Monad
 import Control.Monad.State
 
+import Graphics.Gloss hiding (Point)
+
 -- | Game state
 
 --Basic data of World, add other datatypes used below
@@ -37,6 +39,7 @@ data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
 
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
 data GameState         = InMenu | InGame                    deriving (Show, Eq)
+data BonusType         = ExtraMultiplier                    deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos   :: Point
@@ -53,6 +56,7 @@ data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
                      , _enemyDir  :: Float
                      , _enemySize :: Float
+                     , _enemyPicture :: Picture
                      } deriving (Show, Eq)
 data Bullet = Bullet { _bulPos    :: Point
                      , _bulSpeed  :: Float
@@ -124,17 +128,19 @@ newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
                    }
                    
 --Returns a new enemy at a given (random) point, moving in a given dir
-newEnemy :: Point -> Float -> Enemy
-newEnemy p d = Enemy { _enemyPos     = p
-                     , _enemySize    = 15
-                     , _movementType = FixedDirection
-                     , _enemyDir     = d
-                     }
+--with given picture and size
+newEnemy :: Point -> Float -> Picture -> Float -> Enemy
+newEnemy p d picture size = Enemy { _enemyPos     = p
+                                  , _enemySize    = size
+                                  , _movementType = FixedDirection
+                                  , _enemyDir     = d
+                                  , _enemyPicture = picture
+                                  }
 
-newFollowingEnemy :: Point -> Enemy
-newFollowingEnemy p = set movementType
-                          FollowPlayer
-                          $ newEnemy p 0
+newFollowingEnemy :: Point -> Picture -> Float -> Enemy
+newFollowingEnemy p pic size = set movementType
+                                   FollowPlayer
+                                   $ newEnemy p 0 pic size
 
 newSpawner :: Float -> Spawner
 newSpawner interval = Spawner { _timeToNext = 0

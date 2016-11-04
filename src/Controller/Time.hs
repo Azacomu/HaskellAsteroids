@@ -123,9 +123,19 @@ spawnEnemies = do spawner <- use enemySpawner
                   enemySpawner.timeToNext -= 1
                   when (spawner^.timeToNext <= 0) $ do
                       playerPos <- use $ player.playerPos
-                      spawnPos <- getRandomSpawnPoint
-                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) :)
+                      spawnPos  <- getRandomSpawnPoint
+                      thisSize  <- getRandomR (15, 45)
+                      enemyPic  <- getEnemyPic thisSize
+                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) enemyPic thisSize :)
                       enemySpawner.timeToNext += spawner^.interval
+
+getEnemyPic :: MonadState World m => Float -> m (Picture)
+getEnemyPic size = do segmentNum <- getRandomR (5 :: Int, 15)
+                      generator <- use rndGen
+                      return (color red $ lineLoop $ getPoints segmentNum segmentNum generator)
+                      where getPoints 0 _ _   = []
+                            getPoints i s gen = (toVector $ moveDir ((fromIntegral i) / (fromIntegral s) * 2 * pi) (size*val) $ Point {_x = 0, _y = 0}) : (getPoints (i - 1) s newGen)
+                                              where (val, newGen) = randomR (1, 1.3) gen
 
 -- Move the enemies in the world
 moveEnemies :: MonadState World m => m ()
