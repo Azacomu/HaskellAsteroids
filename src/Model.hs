@@ -31,6 +31,7 @@ data World = World { _gameState        :: GameState
                    , _bonuses          :: [Bonus]
                    , _bonusSpawner     :: Spawner
                    , _stars            :: [Star]
+                   , _particles        :: [Particle]
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
@@ -76,6 +77,9 @@ data Bonus  = Bonus  { _bonusPos  :: Point
 data Star   = Star   { _starPos   :: Point
                      , _starSpeed :: Float
                      } deriving (Show, Eq)
+data Particle = Particle { _partPos  :: Point
+                         , _partSize :: Float}
+                         deriving (Show, Eq)
                      
 -- Contains data needed for spawning things
 -- only the time to next at the moment, but this could include much more
@@ -96,6 +100,7 @@ makeLenses ''Menu
 makeLenses ''Bonus
 makeLenses ''Collision
 makeLenses ''Star
+makeLenses ''Particle
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
@@ -117,6 +122,7 @@ initial seed = World { _gameState      = InMenu
                      , _tickTime       = 0
                      , _bonuses        = []
                      , _stars          = []
+                     , _particles      = []
                      }
                       
 --Returns the starting values for a player
@@ -173,10 +179,14 @@ newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
+
 --Returns a collision with given vars
+newCollision :: Bullet -> Enemy -> Collision
 newCollision b e = Collision { _b = b, _e = e}
 
-
+newParticle :: Point -> Float -> Particle
+newParticle position size = Particle { _partPos  = position
+                                     , _partSize = size }
 
 
 

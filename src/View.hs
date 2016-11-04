@@ -26,7 +26,8 @@ draw horizontalResolution verticalResolution world
        if world^.gameState == InMenu then
           drawMenu horizontalResolution verticalResolution world
        else
-          drawPlayer (world^.player)
+          drawParticles  world
+          <> drawPlayer  (world^.player)
           <> drawEnemies world
           <> drawBullets world
           <> drawBonuses world
@@ -69,3 +70,7 @@ drawScore x = Color white (text $ show x)
 drawStars :: World -> Picture
 drawStars world = pictures $ map drawStar (world^.stars)
                 where drawStar star = drawCircleSolid (star^.starPos) (makeColor 1 1 1 $ star^.starSpeed / 7) (star^.starSpeed)
+                
+drawParticles :: World -> Picture
+drawParticles world = pictures $ map drawPart (world^.particles)
+                    where drawPart part = drawCircleSolid (part^.partPos) yellow (part^.partSize)

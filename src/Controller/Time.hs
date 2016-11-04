@@ -57,6 +57,7 @@ changeWorld time = do curState <- use gameState
                           pickupBonuses
                           spawnEnemies
                           moveEnemies
+                          updateParticles
                       resetKeys
                       handleStars
 
@@ -72,6 +73,7 @@ movePlayer = do moveAction <- use movementAction
                 when (moveAction == Thrust) $ do
                     p <- use player
                     player.playerPos .= moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+                    particles        %= (newParticle (p^.playerPos) 10 :)
  
 --Rotate the player if needed 
 rotatePlayer :: MonadState World m => m ()
@@ -193,6 +195,11 @@ handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starS
                      newStarPos      <- getRandomR (-1000, 1000)
                      thisSpeed       <- getRandomR (1, 6)
                      stars %= (newStar (Point { _x = 1000, _y = newStarPos}) thisSpeed :)
+
+-- Make the particles smaller
+updateParticles :: MonadState World m => m ()
+updateParticles = do particles.traversed.partSize -= 1
+                     particles %= filter (\p -> p^.partSize > 0)
 
 -- Get a random point at a certain minimum distance from the player
 getRandomSpawnPoint :: MonadState World m => m (Point)
