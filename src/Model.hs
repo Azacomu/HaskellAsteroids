@@ -61,18 +61,22 @@ data Enemy  = Enemy  { _enemyPos  :: Point
 data Bullet = Bullet { _bulPos    :: Point
                      , _bulSpeed  :: Float
                      , _bulDir    :: Float
+                     , _bulTime   :: Float
                      } deriving (Show, Eq)
 data Point  = Point  { _x         :: Float
                      , _y         :: Float
                      } deriving (Show, Eq)
 data Menu   = Menu   { _selectionOption :: Int
                      } deriving (Show, Eq)
+data Collision = Collision { _b :: Bullet
+                           , _e :: Enemy
+                           } deriving (Show)
 data Bonus  = Bonus  { _bonusPos  :: Point
                      } deriving (Show, Eq)
 data Star   = Star   { _starPos   :: Point
                      , _starSpeed :: Float
                      } deriving (Show, Eq)
-
+                     
 -- Contains data needed for spawning things
 -- only the time to next at the moment, but this could include much more
 -- (such as the enemy type, patterns, etc.)
@@ -90,6 +94,7 @@ makeLenses ''Spawner
 makeLenses ''Bullet
 makeLenses ''Menu
 makeLenses ''Bonus
+makeLenses ''Collision
 makeLenses ''Star
 
 --Returns the starting world of the game based on given seed
@@ -158,6 +163,7 @@ newBullet :: Point -> Float -> Bullet
 newBullet p d = Bullet { _bulPos   = p
                        , _bulSpeed = 10
                        , _bulDir   = d
+                       , _bulTime  = 40
                        }
 
 newMenu :: Menu
@@ -167,3 +173,12 @@ newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
+--Returns a collision with given vars
+newCollision b e = Collision { _b = b, _e = e}
+
+
+
+
+
+
+

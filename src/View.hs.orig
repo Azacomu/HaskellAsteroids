@@ -22,8 +22,13 @@ import MenuView
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> IO Picture
 draw horizontalResolution verticalResolution world
-     = return $ drawStars world <>
+<<<<<<< HEAD
+     = drawStars world <>
        if world^.gameState == InMenu then
+=======
+     = return $ 
+      if world^.gameState == InMenu then
+>>>>>>> refs/remotes/origin/Martin
           drawMenu horizontalResolution verticalResolution world
        else
           drawPlayer (world^.player)
@@ -57,15 +62,23 @@ drawBullets :: World -> Picture
 drawBullets world = pictures $ map drawBullet (world^.bullets)
                   where drawBullet b = color green $ line $ path b
                         path b = [toVector $ b^.bulPos, toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
-
+<<<<<<< HEAD
+                        
 drawBonuses :: World -> Picture
 drawBonuses world = pictures $ map drawBonus (world^.bonuses)
                   where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow bonusSize
+                  
+drawStars :: World -> Picture
+drawStars world = pictures $ map drawStar (world^.stars)
+                where drawStar star = drawCircleSolid (star^.starPos) (makeColor 1 1 1 $ star^.starSpeed / 7) (star^.starSpeed)
+=======
 
 --Draws score on the screen (Temp, must be improved)                        
 drawScore :: Int -> Picture
 drawScore x = Color white (text $ show x)
                   
-drawStars :: World -> Picture
-drawStars world = pictures $ map drawStar (world^.stars)
-                where drawStar star = drawCircleSolid (star^.starPos) (makeColor 1 1 1 $ star^.starSpeed / 7) (star^.starSpeed)
+                  
+                  
+                  
+                  
+>>>>>>> refs/remotes/origin/Martin

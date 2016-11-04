@@ -1,5 +1,5 @@
 module Controller (
-    eventHandler,
+    eventHandler, eventHandlerIO,
     timeHandler
 ) where
 
