@@ -100,10 +100,11 @@ resetKeys = do doesConfirm    .= False
                doesSelectPrev .= False
                doesSelectNext .= False
 
---Move the player if needed
+--Move the player if needed (and still possible)
 movePlayer :: MonadState World m => m ()
 movePlayer = do moveAction <- use movementAction
-                when (moveAction == Thrust) $ do
+                lvs        <- use $ player.lives
+                when (moveAction == Thrust && lvs > 0) $ do
                     p                <- use player
                     let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
                     particles        %= (newParticle (p^.playerPos) 10 yellow :)
@@ -237,13 +238,29 @@ spawnEnemies = do spawner <- use enemySpawner
                   when (spawner^.timeToNext <= 0) $ do
                       plrPos     <- use $ player.playerPos
                       spawnPos   <- getRandomSpawnPoint
-                      thisSize   <- getRandomR (15, 45)
-                      segmentNum <- getRandomR (5 :: Int, 15)
-                      generator  <- use rndGen
-                      let edgePoints = getEnemyPoints thisSize segmentNum generator
-                      let dir        = pointDirection spawnPos plrPos
-                      enemies       %= (newEnemy spawnPos dir edgePoints thisSize :)
+                      isFollowing <- getRandomR (0, 1)
+                      if isFollowing < followingChance then do
+                          enemies %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
+                      else do
+                          thisSize    <- getRandomR (15, 45)
+                          segmentNum  <- getRandomR (5 :: Int, 15)
+                          generator   <- use rndGen
+                          let edgePoints = getEnemyPoints thisSize segmentNum generator
+                          let dir        = pointDirection spawnPos plrPos
+                          enemies       %= (newEnemy spawnPos dir edgePoints thisSize :)
                       enemySpawner.timeToNext += spawner^.interval
+
+-- Get points forming a following enemy
+getFollowingEnemyPoints :: [Point]
+getFollowingEnemyPoints = [ Point {_x = 0, _y = 0}
+                          , Point {_x = -16, _y = -16}
+                          , Point {_x = 0,  _y = -8}
+                          , Point {_x = 16, _y = -16}
+                          , Point {_x = 0, _y = 0}
+                          , Point {_x = -16, _y = 0}
+                          , Point {_x = 0, _y = 16}
+                          , Point {_x = 16, _y = 0}
+                          ]
 
 getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
 getEnemyPoints size num g
@@ -307,7 +324,7 @@ getRandomSpawnPoint = do pPos   <- use $ player.playerPos
                          spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
                          spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
                          let spawnPos = Point {_x = spawnX, _y = spawnY}
-                         if pointDistance spawnPos pPos > 250 then
+                         if pointDistance spawnPos pPos > 300 then
                              return spawnPos
                          else
                              getRandomSpawnPoint
