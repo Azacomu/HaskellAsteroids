@@ -8,8 +8,8 @@ import System.Random
 import Control.Monad
 import Control.Monad.State
 
-import Graphics.Gloss hiding (Point)
 import Config
+import Graphics.Gloss hiding (Point)
 
 -- | Game state
 
@@ -41,8 +41,8 @@ data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
 
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
 data GameState         = InMenu | InGame                    deriving (Show, Eq)
+data Side = North | South | West | East | None              deriving (Show, Eq)
 data BonusType         = ExtraMultiplier                    deriving (Show, Eq)
-data Side = North | South | West | East | None                 deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos   :: Point
@@ -188,12 +188,11 @@ newBullet p d = Bullet { _bulPos   = p
 newMenu :: Menu
 newMenu = Menu { _selectionOption = 0 }
 
+
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
-
-
 
 newParticle :: Point -> Float -> Particle
 newParticle position size = Particle { _partPos  = position

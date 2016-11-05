@@ -30,9 +30,9 @@ draw horizontalResolution verticalResolution world
           <> drawPlayer  (world^.player)
           <> drawEnemies world
           <> drawBullets world
-          <> drawBonuses world
           <> drawGUI horizontalResolution verticalResolution (world^.player)
           <> modelPlayer
+          <> drawBonuses world
 
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
