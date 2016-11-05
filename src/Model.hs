@@ -9,6 +9,7 @@ import Control.Monad
 import Control.Monad.State
 
 import Config
+import Graphics.Gloss hiding (Point)
 
 -- | Game state
 
@@ -25,9 +26,13 @@ data World = World { _gameState        :: GameState
                    , _player           :: Player
                    , _enemies          :: [Enemy]
                    , _passedTime       :: Float
-                   , _enemySpawner     :: EnemySpawner
+                   , _enemySpawner     :: Spawner
                    , _bullets          :: [Bullet]
                    , _tickTime         :: Float
+                   , _bonuses          :: [Bonus]
+                   , _bonusSpawner     :: Spawner
+                   , _stars            :: [Star]
+                   , _particles        :: [Particle]
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
@@ -36,7 +41,8 @@ data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
 
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
 data GameState         = InMenu | InGame                    deriving (Show, Eq)
-data Side = North | South | West | East | None                 deriving (Show, Eq)
+data Side = North | South | West | East | None              deriving (Show, Eq)
+data BonusType         = ExtraMultiplier                    deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos   :: Point
@@ -53,6 +59,7 @@ data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
                      , _enemyDir  :: Float
                      , _enemySize :: Float
+                     , _enemyPicture :: Picture
                      } deriving (Show, Eq)
 data Bullet = Bullet { _bulPos    :: Point
                      , _bulSpeed  :: Float
@@ -67,12 +74,20 @@ data Menu   = Menu   { _selectionOption :: Int
 data Collision = Collision { _b :: Bullet
                            , _e :: Enemy
                            } deriving (Show)
+data Bonus  = Bonus  { _bonusPos  :: Point
+                     } deriving (Show, Eq)
+data Star   = Star   { _starPos   :: Point
+                     , _starSpeed :: Float
+                     } deriving (Show, Eq)
+data Particle = Particle { _partPos  :: Point
+                         , _partSize :: Float}
+                         deriving (Show, Eq)
                      
--- Contains data needed for spawning enemies
+-- Contains data needed for spawning things
 -- only the time to next at the moment, but this could include much more
 -- (such as the enemy type, patterns, etc.)
-data EnemySpawner = EnemySpawner { _timeToNext :: Float
-                                 , _interval   :: Float } deriving (Show)
+data Spawner = Spawner { _timeToNext :: Float
+                       , _interval   :: Float } deriving (Show)
 
 --Add lenses below (must be after defining datatypes)
 --(TemplateHaskell can do this automatically with makeLenses,
@@ -81,10 +96,13 @@ makeLenses ''World
 makeLenses ''Player
 makeLenses ''Enemy
 makeLenses ''Point
-makeLenses ''EnemySpawner
+makeLenses ''Spawner
 makeLenses ''Bullet
 makeLenses ''Menu
+makeLenses ''Bonus
 makeLenses ''Collision
+makeLenses ''Star
+makeLenses ''Particle
 
 --Constants for the size of the screen
 screenWidth  :: Float
@@ -106,15 +124,19 @@ initial seed = World { _gameState      = InMenu
                      , _player         = newPlayer
                      , _enemies        = []
                      , _passedTime     = 0
-                     , _enemySpawner   = newEnemySpawner
+                     , _enemySpawner   = newSpawner 60
+                     , _bonusSpawner   = newSpawner 240
                      , _bullets        = []
                      , _tickTime       = 0
+                     , _bonuses        = []
+                     , _stars          = []
+                     , _particles      = []
                      }
                       
 --Returns the starting values for a player
 newPlayer :: Player
 newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
-                   , _playerSize    = 10
+                   , _playerSize    = 20
                    , _playerSpeed   = 5
                    , _playerDir     = 0
                    , _lives         = 3
@@ -125,21 +147,30 @@ newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
                    }
                    
 --Returns a new enemy at a given (random) point, moving in a given dir
-newEnemy :: Point -> Float -> Enemy
-newEnemy p d = Enemy { _enemyPos     = p
-                     , _enemySize    = 5
-                     , _movementType = FixedDirection
-                     , _enemyDir     = d
-                     }
+--with given picture and size
+newEnemy :: Point -> Float -> Picture -> Float -> Enemy
+newEnemy p d picture size = Enemy { _enemyPos     = p
+                                  , _enemySize    = size
+                                  , _movementType = FixedDirection
+                                  , _enemyDir     = d
+                                  , _enemyPicture = picture
+                                  }
 
-newFollowingEnemy :: Point -> Enemy
-newFollowingEnemy p = set movementType
-                          FollowPlayer
-                          $ newEnemy p 0
+newFollowingEnemy :: Point -> Picture -> Float -> Enemy
+newFollowingEnemy p pic size = set movementType
+                                   FollowPlayer
+                                   $ newEnemy p 0 pic size
 
-newEnemySpawner :: EnemySpawner
-newEnemySpawner = EnemySpawner { _timeToNext = 0
-                               , _interval   = 60 }
+newSpawner :: Float -> Spawner
+newSpawner interval = Spawner { _timeToNext = 0
+                              , _interval   = interval }
+
+newBonus :: Point -> Bonus
+newBonus position = Bonus { _bonusPos = position }
+
+--The bonus size is always the same
+bonusSize :: Float
+bonusSize = 8
 
 --Returns a new Bullet with given position and direction                               
 newBullet :: Point -> Float -> Bullet
@@ -153,7 +184,14 @@ newMenu :: Menu
 newMenu = Menu { _selectionOption = 0 }
 
 
+newStar :: Point -> Float -> Star
+newStar p s = Star { _starPos   = p
+                   , _starSpeed = s
+                   }
 
+newParticle :: Point -> Float -> Particle
+newParticle position size = Particle { _partPos  = position
+                                     , _partSize = size }
 
 
 
