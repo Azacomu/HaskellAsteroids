@@ -19,6 +19,7 @@ import Graphics.Gloss.Geometry.Angle
 import System.Random
 
 import Helper
+import Highscores
 import Model
 
 import Controller.MenuUpdate
@@ -28,7 +29,11 @@ import Controller.MenuUpdate
 --This is where we will change the gameworld (Update)
 --time is the passed time in seconds (gameTime)
 timeHandler :: Float -> World -> IO World
-timeHandler time world = return $ execState (changeWorld time) world
+timeHandler time world = if world^.player^.lives <= 0 then execStateT diePlayer world
+                         else if world^.isHighSet then return $ execState (changeWorld time) world
+                         else do hsWorld <- execStateT setWorldHighscore world
+                                 return $ execState (changeWorld time) hsWorld
+                            
 
 --Functions needed for using states
 --Important types:
@@ -61,6 +66,22 @@ changeWorld time = do curState <- use gameState
                       resetKeys
                       handleStars
 
+--Sets the highscore var in the world
+setWorldHighscore :: StateT World IO ()
+setWorldHighscore = do hs <- lift getHighscore
+                       highscore .= hs
+                       isHighSet .= True
+
+--Changes the world for when the player dies
+diePlayer :: StateT World IO ()
+diePlayer = do score  <- use $ player.score
+               better <- lift $ checkHighscore score 
+               if not better then gameState .= InMenu
+               else do lift $ saveHighscore score
+                       highscore      .= score
+                       isNewHighscore .= True
+                       gameState      .= InMenu
+                      
 --Reset some keys that should only be handled on press
 resetKeys :: MonadState World m => m()
 resetKeys = do doesConfirm    .= False
@@ -85,10 +106,6 @@ checkPlayer = do pos <- use $ player.playerPos
                     North -> player.playerPos.y -= screenHeight + 20
                     South -> player.playerPos.y += screenHeight + 20
                     None  -> return ()
-
---Changes the world for when the player dies (TODO)
-diePlayer :: MonadState World m => m ()
-diePlayer = return ()
 
 --Checks whether given point is outside the screen (with given offset to each side)                  
 outsideBounds :: Point -> Float -> Side

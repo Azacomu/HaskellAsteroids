@@ -33,6 +33,9 @@ data World = World { _gameState        :: GameState
                    , _bonusSpawner     :: Spawner
                    , _stars            :: [Star]
                    , _particles        :: [Particle]
+                   , _highscore        :: Int
+                   , _isHighSet        :: Bool
+                   , _isNewHighscore   :: Bool
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
@@ -131,6 +134,9 @@ initial seed = World { _gameState      = InMenu
                      , _bonuses        = []
                      , _stars          = []
                      , _particles      = []
+                     , _highscore      = 0
+                     , _isHighSet      = False
+                     , _isNewHighscore = False
                      }
                       
 --Returns the starting values for a player
