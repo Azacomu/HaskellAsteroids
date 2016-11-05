@@ -96,7 +96,7 @@ movePlayer = do moveAction <- use movementAction
                 when (moveAction == Thrust) $ do
                     p <- use player
                     player.playerPos .= moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
-                    particles        %= (newParticle (p^.playerPos) 10 :)
+                    particles        %= (newParticle (p^.playerPos) 10 yellow :)
                     checkPlayer
                     
 --Checks whether the player is still inside the screen                   
@@ -177,9 +177,16 @@ updateBullets = do es <- use enemies
                    sMul         <- use $ player.scoreMul
                    player.score += length (fst colEnemy) * sMul
                    bullets      .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
+                   explodeEnemies $ snd colEnemy
                    enemies      .= filter (not . (insnd colEnemy)) es
                    bonuses      .= filter (not . (insnd colBonus)) bn
                    bullets.traversed.bulTime -= 1                
+
+-- Let enemies in the monad explode
+explodeEnemies :: MonadState World m => [Enemy] -> m ()
+explodeEnemies []           = return ()
+explodeEnemies (thisE:allE) = do explodeEnemies allE
+                                 particles %= (map (\p -> newParticle (p `addPoints` (thisE^.enemyPos)) 10 red) (thisE^.enemyEdges) ++)
 
 --Class for objects you can collide with
 class Collider a where

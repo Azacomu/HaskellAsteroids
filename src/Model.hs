@@ -85,7 +85,8 @@ data Star   = Star   { _starPos   :: Point
                      , _starSpeed :: Float
                      } deriving (Show, Eq)
 data Particle = Particle { _partPos  :: Point
-                         , _partSize :: Float}
+                         , _partSize :: Float
+                         , _partCol  :: Color}
                          deriving (Show, Eq)
                      
 -- Contains data needed for spawning things
@@ -202,9 +203,10 @@ newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
 
-newParticle :: Point -> Float -> Particle
-newParticle position size = Particle { _partPos  = position
-                                     , _partSize = size }
+newParticle :: Point -> Float -> Color -> Particle
+newParticle position size color = Particle { _partPos  = position
+                                           , _partSize = size
+                                           , _partCol  = color }
 
 
 

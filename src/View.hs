@@ -101,4 +101,4 @@ drawStars world = pictures $ map drawStar (world^.stars)
                 
 drawParticles :: World -> Picture
 drawParticles world = pictures $ map drawPart (world^.particles)
-                    where drawPart part = drawCircleSolid (part^.partPos) yellow (part^.partSize)
+                    where drawPart part = drawCircleSolid (part^.partPos) (part^.partCol) (part^.partSize)
