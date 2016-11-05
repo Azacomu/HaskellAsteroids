@@ -195,22 +195,27 @@ updateBullets = do es <- use enemies
 -- Let enemies in the monad explode
 explodeEnemies :: MonadState World m => [Enemy] -> m ()
 explodeEnemies []           = return ()
-explodeEnemies (thisE:allE) = do explodeEnemies allE
-                                 particles %= (map (\p -> newParticle (p `addPoints` (thisE^.enemyPos)) 10 red) (thisE^.enemyEdges) ++)
-                                 -- Spawn new enemies if the enemies was very big
-                                 when (thisE^.enemySize > 30) $ do
-                                     startingAngle <- getRandomR (0, pi / 2)
-                                     spawnE startingAngle
-                                     spawnE $ startingAngle + pi / 2
-                                     spawnE $ startingAngle + pi
-                                     spawnE $ startingAngle + pi * 1.5
-                            where
-                                spawnE angle
-                                 = do segmentNum <- getRandomR (5 :: Int, 10)
-                                      generator  <- use rndGen
-                                      let newSize = thisE^.enemySize / 2
-                                      let edgePoints = getEnemyPoints newSize segmentNum generator
-                                      enemies %= (newEnemy (moveDir angle newSize (thisE^.enemyPos)) angle edgePoints newSize :)
+explodeEnemies (thisE:allE)
+    = do explodeEnemies allE
+         particles %= (map (\p -> newParticle (p `addPoints` (thisE^.enemyPos)) 10 red) (thisE^.enemyEdges) ++)
+         -- Spawn new enemies if the enemies was very big
+         when (thisE^.enemySize > 30) $ do
+             startingAngle <- getRandomR (0, pi / 2)
+             spawnE startingAngle
+             spawnE $ startingAngle + pi / 2
+             spawnE $ startingAngle + pi
+             spawnE $ startingAngle + pi * 1.5
+    where
+        spawnE angle
+         = do segmentNum <- getRandomR (5 :: Int, 10)
+              generator  <- use rndGen
+              let newSize = thisE^.enemySize / 2
+              let edgePoints = getEnemyPoints newSize segmentNum generator
+              enemies %= (newEnemy (moveDir angle newSize (thisE^.enemyPos))
+                                   angle
+                                   edgePoints
+                                   newSize
+                                   (thisE^.enemySpeed) :)
 
 --Class for objects you can collide with
 class Collider a where
@@ -239,17 +244,18 @@ spawnEnemies = do spawner      <- use enemySpawner
                   when (spawner^.timeToNext <= 0) $ do
                       plrPos        <- use $ player.playerPos
                       spawnPos      <- getRandomSpawnPoint
-                      isFollowing   <- getRandomR (0, 1)
+                      isFollowing   <- getRandom
                       timeNextE     += spawner^.interval
                       if isFollowing < followingChance then do
-                         enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
+                          enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
                       else do
-                         thisSize      <- getRandomR (15, 45)
-                         segmentNum    <- getRandomR (5 :: Int, 15)
-                         generator     <- use rndGen
-                         let edgePoints = getEnemyPoints thisSize segmentNum generator
-                         let dir        = pointDirection spawnPos plrPos
-                         enemies       %= (newEnemy spawnPos dir edgePoints thisSize :)
+                          thisSize      <- getRandomR (15, 45)
+                          segmentNum    <- getRandomR (5 :: Int, 15)
+                          spd           <- getRandomR (3, 5)
+                          generator     <- use rndGen
+                          let edgePoints = getEnemyPoints thisSize segmentNum generator
+                          let dir        = pointDirection spawnPos plrPos
+                          enemies       %= (newEnemy spawnPos dir edgePoints thisSize spd :)
                       
 
 -- Get points forming a following enemy
@@ -301,9 +307,9 @@ moveEnemies = do plrPos     <- use $ player.playerPos
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy plrPos e
     = e & enemyPos .~ if e^.movementType == FixedDirection then
-                          checkPosition (moveDir (e^.enemyDir) 5 (e^.enemyPos)) (e^.enemySize)
+                          checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
                       else
-                          moveTo 5 plrPos $ e^.enemyPos
+                          moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
 
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
@@ -334,6 +340,12 @@ getRandomSpawnPoint = do pPos   <- use $ player.playerPos
 -- Get a random value using the world state
 getRandomR :: (MonadState World m, Random a) => (a, a) -> m (a)
 getRandomR range = do generator <- use rndGen
-                      let r = randomR range generator
-                      rndGen .= snd r
-                      return $ fst r
+                      let (r, g) = randomR range generator
+                      rndGen .= g
+                      return $ r
+
+getRandom :: (MonadState World m, Random a) => m (a)
+getRandom = do generator <- use rndGen
+               let (r, g) = random generator
+               rndGen .= g
+               return $ r
