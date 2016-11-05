@@ -246,24 +246,27 @@ instance Collider Bonus where
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
-spawnEnemies = do spawner      <- use enemySpawner
-                  let timeNextE = enemySpawner.timeToNext
-                  timeNextE    -= 1
-                  when (spawner^.timeToNext <= 0) $ do
-                      plrPos        <- use $ player.playerPos
-                      spawnPos      <- getRandomSpawnPoint
-                      isFollowing   <- getRandom
-                      timeNextE     += spawner^.interval
-                      if isFollowing < followingChance then do
-                          enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
-                      else do
-                          thisSize      <- getRandomR (15, 45)
-                          segmentNum    <- getRandomR (5 :: Int, 15)
-                          spd           <- getRandomR (3, 5)
-                          generator     <- use rndGen
-                          let edgePoints = getEnemyPoints thisSize segmentNum generator
-                          let dir        = pointDirection spawnPos plrPos
-                          enemies       %= (newEnemy spawnPos dir edgePoints thisSize spd :)
+spawnEnemies
+    = do spawner      <- use enemySpawner
+         let timeNextE = enemySpawner.timeToNext
+         timeNextE    -= 1
+         when (spawner^.timeToNext <= 0) $ do
+             plrPos        <- use $ player.playerPos
+             spawnPos      <- getRandomSpawnPoint
+             isFollowing   <- getRandom
+             timeNextE     += spawner^.interval
+             if isFollowing < followingChance then do
+                 enemies    %= (newFollowingEnemy spawnPos
+                                                  getFollowingEnemyPoints
+                                                  16 :)
+             else do
+                 thisSize   <- getRandomR (15, 45)
+                 segmentNum <- getRandomR (5, 15)
+                 spd        <- getRandomR (3, 5)
+                 generator  <- use rndGen
+                 let eps     = getEnemyPoints thisSize segmentNum generator
+                 let dir     = pointDirection spawnPos plrPos
+                 enemies    %= (newEnemy spawnPos dir eps thisSize spd :)
                       
 
 -- Get points forming a following enemy
@@ -323,7 +326,7 @@ moveEnemy plrPos e
 handleStars :: MonadState World m => m ()
 handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
                  stars %= filter (\star -> star^.starPos.x > -screenWidth / 2)
-                 shouldSpawnStar <- getRandomR (0 :: Float, 1)
+                 shouldSpawnStar <- getRandom
                  when (shouldSpawnStar < starSpawnChance) $ do
                      newStarPos      <- getRandomR (-screenHeight / 2, screenHeight / 2)
                      thisSpeed       <- getRandomR (1, 6)
