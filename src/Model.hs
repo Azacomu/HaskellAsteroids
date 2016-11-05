@@ -204,6 +204,10 @@ newMenu = Menu { _hasDiedBefore = False
 starSpawnChance :: Float
 starSpawnChance = 0.3
 
+-- Chance a following enemy is spawned
+followingChance :: Float
+followingChance = 0.4
+
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s

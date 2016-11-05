@@ -236,14 +236,30 @@ spawnEnemies :: MonadState World m => m ()
 spawnEnemies = do spawner <- use enemySpawner
                   enemySpawner.timeToNext -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      playerPos  <- use $ player.playerPos
-                      spawnPos   <- getRandomSpawnPoint
-                      thisSize   <- getRandomR (15, 45)
-                      segmentNum <- getRandomR (5 :: Int, 15)
-                      generator  <- use rndGen
-                      let edgePoints = getEnemyPoints thisSize segmentNum generator
-                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) edgePoints thisSize :)
+                      playerPos   <- use $ player.playerPos
+                      spawnPos    <- getRandomSpawnPoint
+                      isFollowing <- getRandomR (0, 1)
+                      if isFollowing < followingChance then do
+                          enemies %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
+                      else do
+                          thisSize    <- getRandomR (15, 45)
+                          segmentNum  <- getRandomR (5 :: Int, 15)
+                          generator   <- use rndGen
+                          let edgePoints = getEnemyPoints thisSize segmentNum generator
+                          enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) edgePoints thisSize :)
                       enemySpawner.timeToNext += spawner^.interval
+
+-- Get points forming a following enemy
+getFollowingEnemyPoints :: [Point]
+getFollowingEnemyPoints = [ Point {_x = 0, _y = 0}
+                          , Point {_x = -16, _y = -16}
+                          , Point {_x = 0,  _y = -8}
+                          , Point {_x = 16, _y = -16}
+                          , Point {_x = 0, _y = 0}
+                          , Point {_x = -16, _y = 0}
+                          , Point {_x = 0, _y = 16}
+                          , Point {_x = 16, _y = 0}
+                          ]
 
 getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
 getEnemyPoints size num g
@@ -307,7 +323,7 @@ getRandomSpawnPoint = do pPos   <- use $ player.playerPos
                          spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
                          spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
                          let spawnPos = Point {_x = spawnX, _y = spawnY}
-                         if pointDistance spawnPos pPos > 250 then
+                         if pointDistance spawnPos pPos > 300 then
                              return spawnPos
                          else
                              getRandomSpawnPoint
