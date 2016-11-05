@@ -3,7 +3,6 @@ module Controller.Event (
 ) where
 
 import Control.Lens
-import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
 
 import Model
@@ -38,6 +37,5 @@ eventHandler (EventKey (SpecialKey KeySpace) Up   _ _)
     = shootAction .~ DontShoot
 eventHandler (EventKey (SpecialKey KeyEnter) Down _ _)
     = doesConfirm .~ True
-
 eventHandler _
     = id
