@@ -175,7 +175,7 @@ newFollowingEnemy p pnts size = set movementType
                                     $ newEnemy p 0 pnts size
 
 newSpawner :: Float -> Spawner
-newSpawner interval = Spawner { _timeToNext = 0
+newSpawner interval = Spawner { _timeToNext = interval - 1
                               , _interval   = interval }
 
 newBonus :: Point -> Bonus

@@ -178,7 +178,8 @@ updateBullets = do es <- use enemies
                    player.score += length (fst colEnemy) * sMul
                    bullets      .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
                    explodeEnemies $ snd colEnemy
-                   enemies      .= filter (not . (insnd colEnemy)) es
+                   es2 <- use enemies --We can have spawned new enemies
+                   enemies      .= filter (not . (insnd colEnemy)) es2
                    bonuses      .= filter (not . (insnd colBonus)) bn
                    bullets.traversed.bulTime -= 1                
 
@@ -187,6 +188,20 @@ explodeEnemies :: MonadState World m => [Enemy] -> m ()
 explodeEnemies []           = return ()
 explodeEnemies (thisE:allE) = do explodeEnemies allE
                                  particles %= (map (\p -> newParticle (p `addPoints` (thisE^.enemyPos)) 10 red) (thisE^.enemyEdges) ++)
+                                 -- Spawn new enemies if the enemies was very big
+                                 when (thisE^.enemySize > 30) $ do
+                                     startingAngle <- getRandomR (0, pi / 2)
+                                     spawnE startingAngle
+                                     spawnE $ startingAngle + pi / 2
+                                     spawnE $ startingAngle + pi
+                                     spawnE $ startingAngle + pi * 1.5
+                            where
+                                spawnE angle
+                                 = do segmentNum <- getRandomR (5 :: Int, 10)
+                                      generator  <- use rndGen
+                                      let newSize = thisE^.enemySize / 2
+                                      let edgePoints = getEnemyPoints newSize segmentNum generator
+                                      enemies %= (newEnemy (moveDir angle newSize (thisE^.enemyPos)) angle edgePoints newSize :)
 
 --Class for objects you can collide with
 class Collider a where
