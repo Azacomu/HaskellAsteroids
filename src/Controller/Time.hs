@@ -24,11 +24,26 @@ import Graphics.Gloss hiding (Point)
 --This is where we will change the gameworld (Update)
 --time is the passed time in seconds (gameTime)
 timeHandler :: Float -> World -> IO World
-timeHandler time world = if world^.player^.lives <= 0 then execStateT diePlayer world
+timeHandler time world = if world^.endTimer > 0 then do
+                             let nWorld = execState reduceEndTimer world
+                             if (nWorld^.endTimer) < 0 then
+                                 execStateT diePlayer nWorld
+                             else
+                                 return $ execState (changeWorld time) nWorld
+                         else if world^.player^.lives <= 0 then
+                             return $ execState setEndTimer world
                          else if world^.isHighSet then return $ execState (changeWorld time) world
                          else do hsWorld <- execStateT setWorldHighscore world
                                  return $ execState (changeWorld time) hsWorld
-                            
+                                 
+-- End of the world: a few seconds where the player is dead and we 
+-- haven't returned to the main menu yet
+                      
+setEndTimer :: MonadState World m => m ()
+setEndTimer = endTimer .= 60
+
+reduceEndTimer :: MonadState World m => m ()
+reduceEndTimer = endTimer -= 1
 
 --Functions needed for using states
 --Important types:
@@ -249,12 +264,19 @@ moveEnemies = do playerPos  <- use $ player.playerPos
                  else do
                      currentEnemies <- use enemies
                      let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
+                     -- Collide with player
                      when (not $ null collidingEnemies) $ do
                          player.scoreMul       .= 1
                          player.lives          -= 1
                          player.invincibleTime += invincibleTimeAfterCollision
                          explodeEnemies collidingEnemies
                          enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
+                         -- Spawn explosion particles
+                         replicateM_ 100 $ do
+                             dir        <- getRandomR (0, 2 * pi)
+                             dist       <- getRandomR (0, playerSize)
+                             let partPos = moveDir dir dist playerPos
+                             particles  %= (newParticle partPos 10 white :)
 
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
