@@ -41,10 +41,6 @@ drawCircle p c r = translate (p^.x) (p^.y) (color c (circle r))
 drawCircleSolid :: Point -> Color -> Float -> Picture
 drawCircleSolid p c r = translate (p^.x) (p^.y) (color c (circleSolid r))
 
---Returns a standard circle around given point, useful for testing
-drawStdCircle :: Point -> Picture
-drawStdCircle p = drawCircle p white 5
-
 drawEnemies :: World -> Picture
 drawEnemies world = pictures $ map drawEnemy (world^.enemies)
                   where drawEnemy enemy = translate (enemy^.enemyPos.x) (enemy^.enemyPos.y) $ enemy^.enemyPicture--drawCircle (enemy^.enemyPos) red (enemy^.enemySize)

@@ -6,8 +6,6 @@
 
 module Main where
 
-import Control.Applicative
-
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import System.Environment    (getArgs)
 
@@ -18,7 +16,6 @@ import Config
 import Model
 import View
 import Controller
-import Highscores
 
 -- | Main
 
@@ -28,8 +25,8 @@ import Highscores
 --In Model.hs the initial const (The starting world)
 --In Event.hs the user actions (==InputHandler)
 
---play :: Display -> Color -> Int -> world -> (world -> Picture) ->
---        (Event -> world -> world) -> (Float -> world -> world) -> IO ()
+--playIO :: Display -> Color -> Int -> world -> (world -> IO Picture) ->
+--          (Event -> world -> IO world) -> (Float -> world -> IO world) -> IO ()
 
 main :: IO ()
 main = do

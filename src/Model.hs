@@ -76,9 +76,6 @@ data Point  = Point  { _x         :: Float
 data Menu   = Menu   { _selectionOption :: Int
                      , _hasDiedBefore   :: Bool
                      } deriving (Show, Eq)
-data Collision = Collision { _b :: Bullet
-                           , _e :: Enemy
-                           } deriving (Show)
 data Bonus  = Bonus  { _bonusPos  :: Point
                      } deriving (Show, Eq)
 data Star   = Star   { _starPos   :: Point
@@ -106,7 +103,6 @@ makeLenses ''Spawner
 makeLenses ''Bullet
 makeLenses ''Menu
 makeLenses ''Bonus
-makeLenses ''Collision
 makeLenses ''Star
 makeLenses ''Particle
 
