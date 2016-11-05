@@ -196,6 +196,7 @@ moveEnemies = do playerPos  <- use $ player.playerPos
                  let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
                  when (not $ null collidingEnemies) $ do
                      player.scoreMul .= 1
+                     player.lives    -= 1
                      enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)
