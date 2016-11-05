@@ -133,8 +133,7 @@ updateBullets = do es <- use enemies
                    player.score += length (fst col) * sMul
                    bullets      .= filter (\b -> not (infst b || timeout b)) bs
                    enemies      .= filter (not . insnd) es
-                   bullets.traversed.bulTime -= 1
-                   
+                   bullets.traversed.bulTime -= 1                
 
 --Checks if there is a collision and returns it, only returns one collision, as one bullet can only collide with one enemy
 collideWith :: [Enemy] -> Bullet -> Maybe (Bullet, Enemy)
@@ -148,20 +147,21 @@ spawnEnemies :: MonadState World m => m ()
 spawnEnemies = do spawner <- use enemySpawner
                   enemySpawner.timeToNext -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      playerPos <- use $ player.playerPos
-                      spawnPos  <- getRandomSpawnPoint
-                      thisSize  <- getRandomR (15, 45)
-                      enemyPic  <- getEnemyPic thisSize
-                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) enemyPic thisSize :)
+                      playerPos  <- use $ player.playerPos
+                      spawnPos   <- getRandomSpawnPoint
+                      thisSize   <- getRandomR (15, 45)
+                      segmentNum <- getRandomR (5 :: Int, 15)
+                      generator  <- use rndGen
+                      let edgePoints = getEnemyPoints thisSize segmentNum generator
+                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) edgePoints thisSize :)
                       enemySpawner.timeToNext += spawner^.interval
 
-getEnemyPic :: MonadState World m => Float -> m (Picture)
-getEnemyPic size = do segmentNum <- getRandomR (5 :: Int, 15)
-                      generator <- use rndGen
-                      return (color red $ lineLoop $ getPoints segmentNum segmentNum generator)
-                      where getPoints 0 _ _   = []
-                            getPoints i s gen = (toVector $ moveDir ((fromIntegral i) / (fromIntegral s) * 2 * pi) (size*val) $ Point {_x = 0, _y = 0}) : (getPoints (i - 1) s newGen)
-                                              where (val, newGen) = randomR (1, 1.3) gen
+getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
+getEnemyPoints size num g
+    = helper num g
+    where helper 0 _   = []
+          helper i gen = (moveDir ((fromIntegral i) / (fromIntegral num) * 2 * pi) (size * val) $ Point {_x = 0, _y = 0}) : (helper (i - 1) newGen)
+                          where (val, newGen) = randomR (1, 1.3) gen
 
 -- Move the enemies in the world
 moveEnemies :: MonadState World m => m ()
