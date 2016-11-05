@@ -36,6 +36,7 @@ data World = World { _gameState        :: GameState
                    , _highscore        :: Int
                    , _isHighSet        :: Bool
                    , _isNewHighscore   :: Bool
+                   , _endTimer         :: Float
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
@@ -137,6 +138,7 @@ initial seed = World { _gameState      = InMenu
                      , _highscore      = 0
                      , _isHighSet      = False
                      , _isNewHighscore = False
+                     , _endTimer       = 0
                      }
                       
 --Returns the starting values for a player
@@ -185,7 +187,7 @@ newBonus position = Bonus { _bonusPos = position }
 
 --The bonus size is always the same
 bonusSize :: Float
-bonusSize = 8
+bonusSize = 12
 
 --Returns a new Bullet with given position and direction                               
 newBullet :: Point -> Float -> Bullet
