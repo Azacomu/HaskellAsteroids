@@ -100,10 +100,11 @@ resetKeys = do doesConfirm    .= False
                doesSelectPrev .= False
                doesSelectNext .= False
 
---Move the player if needed
+--Move the player if needed (and still possible)
 movePlayer :: MonadState World m => m ()
 movePlayer = do moveAction <- use movementAction
-                when (moveAction == Thrust) $ do
+                lvs        <- use $ player.lives
+                when (moveAction == Thrust && lvs > 0) $ do
                     p                <- use player
                     let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
                     particles        %= (newParticle (p^.playerPos) 10 yellow :)
