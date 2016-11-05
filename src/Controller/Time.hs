@@ -17,6 +17,8 @@ import Model
 
 import Controller.MenuUpdate
 
+import Graphics.Gloss hiding (Point)
+
 -- | Time handling
 
 --This is where we will change the gameworld (Update)
