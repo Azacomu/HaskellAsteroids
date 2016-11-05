@@ -76,14 +76,14 @@ movePlayer = do moveAction <- use movementAction
                     particles        %= (newParticle (p^.playerPos) 10 :)
                     checkPlayer
                     
---Checks whether the player is still inside the screen and is not dead                    
+--Checks whether the player is still inside the screen                   
 checkPlayer :: MonadState World m => m ()
 checkPlayer = do pos <- use $ player.playerPos
                  case outsideBounds pos 20 of
-                    East  -> player.playerPos.x -= screenWidth
-                    West  -> player.playerPos.x += screenWidth
-                    North -> player.playerPos.y -= screenHeight
-                    South -> player.playerPos.y += screenHeight
+                    East  -> player.playerPos.x -= screenWidth + 20
+                    West  -> player.playerPos.x += screenWidth + 20
+                    North -> player.playerPos.y -= screenHeight + 20
+                    South -> player.playerPos.y += screenHeight + 20
                     None  -> return ()
 
 --Changes the world for when the player dies (TODO)
@@ -143,27 +143,41 @@ pickupBonuses = do playerPos  <- use $ player.playerPos
                    when (not $ null collidingBonuses) $ do
                        player.scoreMul += 1
                        bonuses %= filter (not . (`elem` collidingBonuses)) -- Destroy any colliding enemies
---Checks whether bullets collide and updates the lifetime and deletes the bullet if it times out
 
+--Checks whether bullets collide and updates the lifetime and deletes the bullet if it times out
 updateBullets :: MonadState World m => m ()
 updateBullets = do es <- use enemies
                    bs <- use bullets
-                   let col       = unzip $ mapMaybe (collideWith es) bs
-                   let infst x   = x `elem` (fst col)
-                   let insnd x   = x `elem` (snd col)
+                   bn <- use bonuses
+                   let colEnemy  = unzip $ mapMaybe (collideWith es) bs
+                   let colBonus  = unzip $ mapMaybe (collideWith bn) bs
+                   let infst c x = x `elem` (fst c)
+                   let insnd c x = x `elem` (snd c)
                    let timeout b = b^.bulTime <= 0
+                   player.scoreMul += length (snd colBonus)
                    sMul         <- use $ player.scoreMul
-                   player.score += length (fst col) * sMul
-                   bullets      .= filter (\b -> not (infst b || timeout b)) bs
-                   enemies      .= filter (not . insnd) es
+                   player.score += length (fst colEnemy) * sMul
+                   bullets      .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
+                   enemies      .= filter (not . (insnd colEnemy)) es
+                   bonuses      .= filter (not . (insnd colBonus)) bn
                    bullets.traversed.bulTime -= 1
                    
+--Class for objects you can collide with
+class Collider a where
+    --Checks if there is a collision with a Bullet and returns it
+    collideWith :: [a] -> Bullet -> Maybe (Bullet, a)
+    
+--Instance to collide enemies with bullets
+instance Collider Enemy where
+    collideWith enemies b | filtered == [] = Nothing
+                          | otherwise      = Just (b, (head filtered))
+                          where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize)) enemies
 
---Checks if there is a collision and returns it, only returns one collision, as one bullet can only collide with one enemy
-collideWith :: [Enemy] -> Bullet -> Maybe (Bullet, Enemy)
-collideWith enemies b | filtered == [] = Nothing
-                      | otherwise      = Just (b, (head filtered))
-                      where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize)) enemies
+--Instance to collide bonuses with bullets                          
+instance Collider Bonus where
+    collideWith bonus b | filtered == [] = Nothing
+                        | otherwise      = Just (b, (head filtered))
+                        where filtered = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bonus
           
 
 -- Spawn new enemies every now and then
