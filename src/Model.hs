@@ -63,6 +63,7 @@ data Enemy  = Enemy  { _enemyPos  :: Point
                      , _enemySize :: Float
                      , _enemyEdges :: [Point]
                      , _enemyPicture :: Picture
+                     , _enemySpeed :: Float
                      } deriving (Show, Eq)
 data Bullet = Bullet { _bulPos    :: Point
                      , _bulSpeed  :: Float
@@ -158,22 +159,27 @@ invincibleTimeAfterCollision = 60
             
 --Returns a new enemy at a given (random) point, moving in a given dir
 --with given picture and size
-newEnemy :: Point -> Float -> [Point] -> Float -> Enemy
-newEnemy p d edgePoints size = Enemy { _enemyPos     = p
-                                     , _enemySize    = size
-                                     , _movementType = FixedDirection
-                                     , _enemyDir     = d
-                                     , _enemyEdges   = edgePoints --These are the points that make up the shape of the enemy
-                                     , _enemyPicture = getEnemyPic edgePoints
-                                     }
+newEnemy :: Point -> Float -> [Point] -> Float -> Float -> Enemy
+newEnemy p d edgePoints size speed
+    = Enemy { _enemyPos     = p
+            , _enemySize    = size
+            , _movementType = FixedDirection
+            , _enemyDir     = d
+            , _enemyEdges   = edgePoints --These are the points that make up the shape of the enemy
+            , _enemyPicture = getEnemyPic edgePoints
+            , _enemySpeed   = speed
+            }
 
 getEnemyPic :: [Point] -> Picture
 getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) points
 
+followingEnemySpeed :: Float
+followingEnemySpeed = 3
+
 newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
 newFollowingEnemy p pnts size = set movementType
                                     FollowPlayer
-                                    $ newEnemy p 0 pnts size
+                                    $ newEnemy p 0 pnts size followingEnemySpeed
 
 newSpawner :: Float -> Spawner
 newSpawner intval = Spawner { _timeToNext = intval - 1
