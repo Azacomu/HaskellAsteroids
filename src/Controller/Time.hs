@@ -233,33 +233,35 @@ instance Collider Bonus where
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
-spawnEnemies = do spawner <- use enemySpawner
-                  enemySpawner.timeToNext -= 1
+spawnEnemies = do spawner      <- use enemySpawner
+                  let timeNextE = enemySpawner.timeToNext
+                  timeNextE    -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      plrPos     <- use $ player.playerPos
-                      spawnPos   <- getRandomSpawnPoint
-                      isFollowing <- getRandomR (0, 1)
+                      plrPos        <- use $ player.playerPos
+                      spawnPos      <- getRandomSpawnPoint
+                      isFollowing   <- getRandomR (0, 1)
+                      timeNextE     += spawner^.interval
                       if isFollowing < followingChance then do
-                          enemies %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
+                         enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
                       else do
-                          thisSize    <- getRandomR (15, 45)
-                          segmentNum  <- getRandomR (5 :: Int, 15)
-                          generator   <- use rndGen
-                          let edgePoints = getEnemyPoints thisSize segmentNum generator
-                          let dir        = pointDirection spawnPos plrPos
-                          enemies       %= (newEnemy spawnPos dir edgePoints thisSize :)
-                      enemySpawner.timeToNext += spawner^.interval
+                         thisSize      <- getRandomR (15, 45)
+                         segmentNum    <- getRandomR (5 :: Int, 15)
+                         generator     <- use rndGen
+                         let edgePoints = getEnemyPoints thisSize segmentNum generator
+                         let dir        = pointDirection spawnPos plrPos
+                         enemies       %= (newEnemy spawnPos dir edgePoints thisSize :)
+                      
 
 -- Get points forming a following enemy
 getFollowingEnemyPoints :: [Point]
-getFollowingEnemyPoints = [ Point {_x = 0, _y = 0}
+getFollowingEnemyPoints = [ Point {_x = 0  , _y = 0  }
                           , Point {_x = -16, _y = -16}
-                          , Point {_x = 0,  _y = -8}
-                          , Point {_x = 16, _y = -16}
-                          , Point {_x = 0, _y = 0}
-                          , Point {_x = -16, _y = 0}
-                          , Point {_x = 0, _y = 16}
-                          , Point {_x = 16, _y = 0}
+                          , Point {_x = 0  , _y = -8 }
+                          , Point {_x = 16 , _y = -16}
+                          , Point {_x = 0  , _y = 0  }
+                          , Point {_x = -16, _y = 0  }
+                          , Point {_x = 0  , _y = 16 }
+                          , Point {_x = 16 , _y = 0  }
                           ]
 
 getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]

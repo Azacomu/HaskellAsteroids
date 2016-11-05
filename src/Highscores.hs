@@ -25,4 +25,4 @@ saveHighscore x = writeFile filePath (show x)
 --Checks whether given int is a highscore or not
 checkHighscore :: Int -> IO Bool
 checkHighscore x = do hs <- getHighscore
-                      return $ if hs >= x then False else True
+                      return $ hs < x
