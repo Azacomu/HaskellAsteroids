@@ -5,9 +5,6 @@ module Model where
 import Control.Lens
 import System.Random
 
-import Control.Monad
-import Control.Monad.State
-
 import Config
 import Graphics.Gloss hiding (Point)
 
@@ -39,14 +36,14 @@ data World = World { _gameState        :: GameState
                    , _endTimer         :: Float
                    } deriving (Show)
     
-data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
-data MovementAction = NoMovement | Thrust     | BackThrust  deriving (Show, Eq)
-data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
+data RotateAction   = NoRotation | RotateLeft | RotateRight  deriving (Show, Eq)
+data MovementAction = NoMovement | Thrust     | BackThrust   deriving (Show, Eq)
+data ShootAction    = Shoot      | DontShoot                 deriving (Show, Eq)
 
-data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
-data GameState         = InMenu | InGame                    deriving (Show, Eq)
-data Side = North | South | West | East | None              deriving (Show, Eq)
-data BonusType         = ExtraMultiplier                    deriving (Show, Eq)
+data EnemyMovementType = FixedDirection | FollowPlayer       deriving (Show, Eq)
+data Side              = North  | South | West | East | None deriving (Show, Eq)
+data GameState         = InMenu | InGame                     deriving (Show, Eq)
+data BonusType         = ExtraMultiplier                     deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos   :: Point
@@ -171,7 +168,7 @@ newEnemy p d edgePoints size = Enemy { _enemyPos     = p
                                      }
 
 getEnemyPic :: [Point] -> Picture
-getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) $ points
+getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) points
 
 newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
 newFollowingEnemy p pnts size = set movementType
@@ -179,8 +176,8 @@ newFollowingEnemy p pnts size = set movementType
                                     $ newEnemy p 0 pnts size
 
 newSpawner :: Float -> Spawner
-newSpawner interval = Spawner { _timeToNext = interval - 1
-                              , _interval   = interval }
+newSpawner intval = Spawner { _timeToNext = intval - 1
+                            , _interval   = intval }
 
 newBonus :: Point -> Bonus
 newBonus position = Bonus { _bonusPos = position }
@@ -214,9 +211,9 @@ newStar p s = Star { _starPos   = p
                    }
 
 newParticle :: Point -> Float -> Color -> Particle
-newParticle position size color = Particle { _partPos  = position
-                                           , _partSize = size
-                                           , _partCol  = color }
+newParticle position size col = Particle { _partPos  = position
+                                         , _partSize = size
+                                         , _partCol  = col }
 
 
 

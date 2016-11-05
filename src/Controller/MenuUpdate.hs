@@ -1,22 +1,12 @@
-{-# LANGUAGE DisambiguateRecordFields, NamedFieldPuns, RecordWildCards       #-}
-{-# LANGUAGE ParallelListComp, FlexibleContexts                              #-}
+{-# LANGUAGE DisambiguateRecordFields, NamedFieldPuns, FlexibleContexts #-}
 
 module Controller.MenuUpdate where
 
-import Control.Arrow ((>>>))
 import Control.Lens
 import Control.Monad
 import Control.Monad.State
-
-import Data.List
-
-import Graphics.Gloss hiding (Point)
-import Graphics.Gloss.Geometry.Angle
-
-import System.Random
-
-import System.IO.Unsafe
 import System.Exit
+import System.IO.Unsafe
 
 import Model
 
@@ -33,7 +23,7 @@ updateMenu = do hasJustDied <- use $ menu.hasDiedBefore
                     menu.selectionOption %= (\o -> if o > 0 then o - 1 else o)
                 selectsNext <- use doesSelectNext
                 when selectsNext $
-                    menu.selectionOption %= (\o -> if o + 1 < (length (menuOptions hasJustDied)) then o + 1 else o)
+                    menu.selectionOption %= (\o -> if o + 1 < length (menuOptions hasJustDied) then o + 1 else o)
                 confirms    <- use doesConfirm
                 nowSelected <- use $ menu.selectionOption
                 when confirms $

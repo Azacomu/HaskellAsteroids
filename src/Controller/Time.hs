@@ -1,14 +1,12 @@
-{-# LANGUAGE DisambiguateRecordFields, NamedFieldPuns, RecordWildCards       #-}
-{-# LANGUAGE ParallelListComp, FlexibleContexts                              #-}
+{-# LANGUAGE DisambiguateRecordFields, NamedFieldPuns, FlexibleContexts #-}
 
-module Controller.Time (
-    timeHandler
-) where
+module Controller.Time (timeHandler) where
 
 import Control.Lens
 import Control.Monad
 import Control.Monad.State
 import Data.Maybe
+import Graphics.Gloss hiding (Point)
 import System.Random
 
 import Helper
@@ -16,8 +14,6 @@ import Highscores
 import Model
 
 import Controller.MenuUpdate
-
-import Graphics.Gloss hiding (Point)
 
 -- | Time handling
 
@@ -176,7 +172,7 @@ pickupBonuses = do plrPos  <- use $ player.playerPos
                    plrSize <- use $ player.playerSize
                    currentBonuses <- use bonuses
                    let collidingBonuses = filter (\b -> pointDistance plrPos (b^.bonusPos) < bonusSize + plrSize) currentBonuses
-                   when (not $ null collidingBonuses) $ do
+                   unless (null collidingBonuses) $ do
                        player.scoreMul += 1
                        bonuses %= filter (not . (`elem` collidingBonuses)) -- Destroy any colliding enemies
 
@@ -196,8 +192,8 @@ updateBullets = do es <- use enemies
                    bullets         .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
                    explodeEnemies $ snd colEnemy
                    es2 <- use enemies --We could have spawned new enemies
-                   enemies         .= filter (not . (insnd colEnemy)) es2
-                   bonuses         .= filter (not . (insnd colBonus)) bn
+                   enemies         .= filter (not . insnd colEnemy) es2
+                   bonuses         .= filter (not . insnd colBonus) bn
                    bullets.traversed.bulTime -= 1                
 
 -- Let enemies in the monad explode
@@ -226,17 +222,16 @@ class Collider a where
     collideWith :: [a] -> Bullet -> Maybe (Bullet, a)
     
 --Instance to collide enemies with bullets
---Use enemy size * 1.2 because we use an optimistic hitbox (enemies can be a bit
--- bigger than their size)
+--Use enemy size * 1.3 because we use an optimistic hitbox (enemies can be a bit bigger than their size)
 instance Collider Enemy where
-    collideWith es b | flist == [] = Nothing
-                     | otherwise      = Just (b, (head flist))
+    collideWith es b | null flist = Nothing
+                     | otherwise  = Just (b, head flist)
                      where flist = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize * 1.3)) es
 
 --Instance to collide bonuses with bullets                          
 instance Collider Bonus where
-    collideWith bs b | flist == [] = Nothing
-                     | otherwise   = Just (b, (head flist))
+    collideWith bs b | null flist = Nothing
+                     | otherwise  = Just (b, head flist)
                      where flist = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bs
 
 -- Spawn new enemies every now and then
@@ -249,7 +244,7 @@ spawnEnemies = do spawner      <- use enemySpawner
                       spawnPos      <- getRandomSpawnPoint
                       isFollowing   <- getRandomR (0, 1)
                       timeNextE     += spawner^.interval
-                      if isFollowing < followingChance then do
+                      if isFollowing < followingChance then
                          enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
                       else do
                          thisSize      <- getRandomR (15, 45)
@@ -276,7 +271,7 @@ getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
 getEnemyPoints size num g
     = helper num g
     where helper 0 _   = []
-          helper i gen = (moveDir ((fromIntegral i) / (fromIntegral num) * 2 * pi) (size * val) $ Point {_x = 0, _y = 0}) : (helper (i - 1) newGen)
+          helper i gen = moveDir (fromIntegral i / fromIntegral num * 2 * pi) (size * val) Point {_x = 0, _y = 0} : helper (i - 1) newGen
                           where (val, newGen) = randomR (1, 1.3) gen
 
 -- Move the enemies in the world
@@ -292,7 +287,7 @@ moveEnemies = do plrPos     <- use $ player.playerPos
                      currentEnemies <- use enemies
                      let collidingEnemies = filter (\e -> pointDistance plrPos (e^.enemyPos) < (e^.enemySize) + plrSize) currentEnemies
                      -- Collide with player
-                     when (not $ null collidingEnemies) $ do
+                     unless (null collidingEnemies) $ do
                          player.scoreMul       .= 1
                          player.lives          -= 1
                          player.invincibleTime += invincibleTimeAfterCollision
@@ -321,7 +316,7 @@ handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starS
                  when (shouldSpawnStar < starSpawnChance) $ do
                      newStarPos      <- getRandomR (-screenHeight / 2, screenHeight / 2)
                      thisSpeed       <- getRandomR (1, 6)
-                     stars %= (newStar (Point { _x = screenWidth / 2, _y = newStarPos}) thisSpeed :)
+                     stars %= (newStar Point { _x = screenWidth / 2, _y = newStarPos} thisSpeed :)
 
 -- Make the particles smaller
 updateParticles :: MonadState World m => m ()
@@ -329,7 +324,7 @@ updateParticles = do particles.traversed.partSize -= 1
                      particles %= filter (\p -> p^.partSize > 0)
 
 -- Get a random point at a certain minimum distance from the player
-getRandomSpawnPoint :: MonadState World m => m (Point)
+getRandomSpawnPoint :: MonadState World m => m Point
 getRandomSpawnPoint = do pPos   <- use $ player.playerPos
                          spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
                          spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
@@ -340,7 +335,7 @@ getRandomSpawnPoint = do pPos   <- use $ player.playerPos
                              getRandomSpawnPoint
 
 -- Get a random value using the world state
-getRandomR :: (MonadState World m, Random a) => (a, a) -> m (a)
+getRandomR :: (MonadState World m, Random a) => (a, a) -> m a
 getRandomR range = do generator <- use rndGen
                       let r = randomR range generator
                       rndGen .= snd r
