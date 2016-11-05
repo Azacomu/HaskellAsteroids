@@ -26,7 +26,7 @@ import Graphics.Gloss hiding (Point)
 timeHandler :: Float -> World -> IO World
 timeHandler time world = if world^.endTimer > 0 then do
                              let nWorld = execState reduceEndTimer world
-                             if (nWorld^.endTimer) < 0 then
+                             if (nWorld^.endTimer) <= 0 then
                                  execStateT diePlayer nWorld
                              else
                                  return $ execState (changeWorld time) nWorld
@@ -40,7 +40,7 @@ timeHandler time world = if world^.endTimer > 0 then do
 -- haven't returned to the main menu yet
                       
 setEndTimer :: MonadState World m => m ()
-setEndTimer = endTimer .= 60
+setEndTimer = endTimer .= 30
 
 reduceEndTimer :: MonadState World m => m ()
 reduceEndTimer = endTimer -= 1
