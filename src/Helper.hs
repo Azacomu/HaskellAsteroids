@@ -30,6 +30,7 @@ pointDirection p1 p2 = atan2 (p2^.x - p1^.x) (p2^.y - p1^.y)
 scaleBoth :: Float -> Picture -> Picture
 scaleBoth s = scale s s
 
-
-
+-- Add two points
+addPoints :: Point -> Point -> Point
+addPoints p1 p2 = Point { _x = p1^.x + p2^.x, _y = p1^.y + p2^.y}
 

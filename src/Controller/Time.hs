@@ -17,6 +17,8 @@ import Model
 
 import Controller.MenuUpdate
 
+import Graphics.Gloss hiding (Point)
+
 -- | Time handling
 
 --This is where we will change the gameworld (Update)
@@ -89,8 +91,8 @@ movePlayer = do moveAction <- use movementAction
                 when (moveAction == Thrust) $ do
                     p                <- use player
                     let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+                    particles        %= (newParticle (p^.playerPos) 10 yellow :)
                     player.playerPos .= checkPosition newDir (p^.playerSize)
-                    particles        %= (newParticle (p^.playerPos) 10 :)
                     
 --Checks whether the position with given offset is still inside the screen, if not returns the new position                  
 checkPosition :: Point -> Float -> Point
@@ -123,7 +125,7 @@ shootPlayer :: MonadState World m => m ()
 shootPlayer = do p     <- use player
                  shoot <- use shootAction
                  player.shootTime -= 1
-                 when (shoot == Shoot && p^.shootTime <= 0) $ do
+                 when (shoot == Shoot && p^.shootTime <= 0 && p^.invincibleTime <= 0) $ do
                     bullets          %= (newBullet (p^.playerPos) (p^.playerDir) :)
                     player.shootTime .= p^.baseShootTime
                     
@@ -169,9 +171,31 @@ updateBullets = do es <- use enemies
                    sMul         <- use $ player.scoreMul
                    player.score += length (fst colEnemy) * sMul
                    bullets      .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
-                   enemies      .= filter (not . (insnd colEnemy)) es
+                   explodeEnemies $ snd colEnemy
+                   es2 <- use enemies --We can have spawned new enemies
+                   enemies      .= filter (not . (insnd colEnemy)) es2
                    bonuses      .= filter (not . (insnd colBonus)) bn
                    bullets.traversed.bulTime -= 1                
+
+-- Let enemies in the monad explode
+explodeEnemies :: MonadState World m => [Enemy] -> m ()
+explodeEnemies []           = return ()
+explodeEnemies (thisE:allE) = do explodeEnemies allE
+                                 particles %= (map (\p -> newParticle (p `addPoints` (thisE^.enemyPos)) 10 red) (thisE^.enemyEdges) ++)
+                                 -- Spawn new enemies if the enemies was very big
+                                 when (thisE^.enemySize > 30) $ do
+                                     startingAngle <- getRandomR (0, pi / 2)
+                                     spawnE startingAngle
+                                     spawnE $ startingAngle + pi / 2
+                                     spawnE $ startingAngle + pi
+                                     spawnE $ startingAngle + pi * 1.5
+                            where
+                                spawnE angle
+                                 = do segmentNum <- getRandomR (5 :: Int, 10)
+                                      generator  <- use rndGen
+                                      let newSize = thisE^.enemySize / 2
+                                      let edgePoints = getEnemyPoints newSize segmentNum generator
+                                      enemies %= (newEnemy (moveDir angle newSize (thisE^.enemyPos)) angle edgePoints newSize :)
 
 --Class for objects you can collide with
 class Collider a where
@@ -179,17 +203,18 @@ class Collider a where
     collideWith :: [a] -> Bullet -> Maybe (Bullet, a)
     
 --Instance to collide enemies with bullets
+--Use enemy size * 1.2 because we use an optimistic hitbox (enemies can be a bit
+-- bigger than their size)
 instance Collider Enemy where
     collideWith enemies b | filtered == [] = Nothing
                           | otherwise      = Just (b, (head filtered))
-                          where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize)) enemies
+                          where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize * 1.3)) enemies
 
 --Instance to collide bonuses with bullets                          
 instance Collider Bonus where
     collideWith bonus b | filtered == [] = Nothing
                         | otherwise      = Just (b, (head filtered))
                         where filtered = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bonus
-          
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
@@ -216,14 +241,20 @@ getEnemyPoints size num g
 moveEnemies :: MonadState World m => m ()
 moveEnemies = do playerPos  <- use $ player.playerPos
                  playerSize <- use $ player.playerSize
+                 invcT      <- use $ player.invincibleTime
                  enemies.traversed %= moveEnemy playerPos
-                 -- Check if any enemies collide with the player
-                 currentEnemies <- use enemies
-                 let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
-                 when (not $ null collidingEnemies) $ do
-                     player.scoreMul .= 1
-                     player.lives    -= 1
-                     enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
+                 -- Check if any enemies collide with the player (if the player isn't invincible)
+                 if invcT > 0 then
+                     player.invincibleTime -= 1
+                 else do
+                     currentEnemies <- use enemies
+                     let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
+                     when (not $ null collidingEnemies) $ do
+                         player.scoreMul       .= 1
+                         player.lives          -= 1
+                         player.invincibleTime += invincibleTimeAfterCollision
+                         explodeEnemies collidingEnemies
+                         enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
@@ -233,18 +264,15 @@ moveEnemy playerPos e
                       else
                           moveTo 5 playerPos $ e^.enemyPos
 
-starSpawnChance :: Float
-starSpawnChance = 0.7
-
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
 handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
-                 stars %= filter (\star -> star^.starPos.x > -1000)
+                 stars %= filter (\star -> star^.starPos.x > -screenWidth / 2)
                  shouldSpawnStar <- getRandomR (0 :: Float, 1)
                  when (shouldSpawnStar < starSpawnChance) $ do
-                     newStarPos      <- getRandomR (-1000, 1000)
+                     newStarPos      <- getRandomR (-screenHeight / 2, screenHeight / 2)
                      thisSpeed       <- getRandomR (1, 6)
-                     stars %= (newStar (Point { _x = 1000, _y = newStarPos}) thisSpeed :)
+                     stars %= (newStar (Point { _x = screenWidth / 2, _y = newStarPos}) thisSpeed :)
 
 -- Make the particles smaller
 updateParticles :: MonadState World m => m ()
@@ -254,8 +282,8 @@ updateParticles = do particles.traversed.partSize -= 1
 -- Get a random point at a certain minimum distance from the player
 getRandomSpawnPoint :: MonadState World m => m (Point)
 getRandomSpawnPoint = do pPos   <- use $ player.playerPos
-                         spawnX <- getRandomR (-400, 400)
-                         spawnY <- getRandomR (-300, 300)
+                         spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
+                         spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
                          let spawnPos = Point {_x = spawnX, _y = spawnY}
                          if pointDistance spawnPos pPos > 250 then
                              return spawnPos

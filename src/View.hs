@@ -27,9 +27,9 @@ draw horizontalResolution verticalResolution world
           drawMenu horizontalResolution verticalResolution world
        else
           drawParticles  world
-          <> drawPlayer  (world^.player)
           <> drawEnemies world
           <> drawBullets world
+          <> drawPlayer  (world^.player)
           <> drawGUI horizontalResolution verticalResolution (world^.player)
           <> drawBonuses world
           <> drawHighscore horizontalResolution verticalResolution (world^.highscore)
@@ -47,7 +47,11 @@ drawEnemies world = pictures $ map drawEnemy (world^.enemies)
 
 --Returns a picture used to draw the player                  
 drawPlayer :: Player -> Picture
-drawPlayer player = translate (player^.playerPos^.x) (player^.playerPos^.y) (rotate (radToDeg $ player^.playerDir) modelPlayer)
+drawPlayer player = translate (player^.playerPos^.x) (player^.playerPos^.y) (rotate (radToDeg $ player^.playerDir) $ modelPlayer alpha)
+                  where alpha = if player^.invincibleTime > 0 then
+                                    0.3
+                                else
+                                    1
 
 -- drawCircle (player^.playerPos) blue (player^.playerSize)
 -- <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
@@ -77,7 +81,7 @@ drawMultiplier hres vres x = translate (-0.1 * hres) (0.5 * vres - 25) (scale 0.
 --Draws the life as a number of small playerModels on the screen
 drawLives :: Float -> Float -> Int -> Picture
 drawLives _ _ 0       = blank
-drawLives hres vres x = pictures (drawLives hres vres (x-1) : [translate (fromIntegral $ x * 30) 0 (scale 0.5 0.5 modelPlayer)])
+drawLives hres vres x = pictures (drawLives hres vres (x-1) : [translate (fromIntegral $ x * 30) 0 (scale 0.5 0.5 $ modelPlayer 1)])
 
 --Draws all in-game GUI elements
 drawGUI :: Float -> Float -> Player -> Picture
@@ -86,10 +90,12 @@ drawGUI h v player =    drawScore      h v (player^.score)
                      <> translate (-0.5 * h) (0.5 * v - 50) (drawLives h v (player^.lives))
 
 --Constant for the picture/graphic used to represent the player (and the remaining lives)
-modelPlayer :: Picture
-modelPlayer = pictures [ color white (line [(-16,-20), (0,20), (16,-20)]) 
-                       , color white (line [(-12,-10), (12,-10)])
-                       , drawCircle Point {_x = 0, _y = 5} green 3 ]
+modelPlayer :: Float -> Picture
+modelPlayer alpha = pictures [ color col1 (line [(-16,-20), (0,20), (16,-20)]) 
+                             , color col1 (line [(-12,-10), (12,-10)])
+                             , drawCircle Point {_x = 0, _y = 5} col2 3 ]
+                  where col1 = withAlpha alpha white
+                        col2 = withAlpha alpha green
                   
 drawStars :: World -> Picture
 drawStars world = pictures $ map drawStar (world^.stars)
@@ -97,4 +103,4 @@ drawStars world = pictures $ map drawStar (world^.stars)
                 
 drawParticles :: World -> Picture
 drawParticles world = pictures $ map drawPart (world^.particles)
-                    where drawPart part = drawCircleSolid (part^.partPos) yellow (part^.partSize)
+                    where drawPart part = drawCircleSolid (part^.partPos) (part^.partCol) (part^.partSize)

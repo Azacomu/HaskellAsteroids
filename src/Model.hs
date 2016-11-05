@@ -57,6 +57,7 @@ data Player = Player { _playerPos   :: Point
                      , _scoreMul    :: Int
                      , _baseShootTime :: Float
                      , _shootTime   :: Float
+                     , _invincibleTime :: Float
                      } deriving (Show, Eq)
 data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
@@ -82,7 +83,8 @@ data Star   = Star   { _starPos   :: Point
                      , _starSpeed :: Float
                      } deriving (Show, Eq)
 data Particle = Particle { _partPos  :: Point
-                         , _partSize :: Float}
+                         , _partSize :: Float
+                         , _partCol  :: Color}
                          deriving (Show, Eq)
                      
 -- Contains data needed for spawning things
@@ -125,8 +127,8 @@ initial seed = World { _gameState      = InMenu
                      , _player         = newPlayer
                      , _enemies        = []
                      , _passedTime     = 0
-                     , _enemySpawner   = newSpawner 60
-                     , _bonusSpawner   = newSpawner 240
+                     , _enemySpawner   = newSpawner 90
+                     , _bonusSpawner   = newSpawner 320
                      , _bullets        = []
                      , _tickTime       = 0
                      , _bonuses        = []
@@ -148,8 +150,13 @@ newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
                    , _scoreMul      = 1
                    , _baseShootTime = 10
                    , _shootTime     = 0
+                   , _invincibleTime = 0
                    }
-                   
+
+-- How much invincible time you have after colliding
+invincibleTimeAfterCollision :: Float
+invincibleTimeAfterCollision = 60
+            
 --Returns a new enemy at a given (random) point, moving in a given dir
 --with given picture and size
 newEnemy :: Point -> Float -> [Point] -> Float -> Enemy
@@ -170,7 +177,7 @@ newFollowingEnemy p pnts size = set movementType
                                     $ newEnemy p 0 pnts size
 
 newSpawner :: Float -> Spawner
-newSpawner interval = Spawner { _timeToNext = 0
+newSpawner interval = Spawner { _timeToNext = interval - 1
                               , _interval   = interval }
 
 newBonus :: Point -> Bonus
@@ -192,16 +199,18 @@ newMenu :: Menu
 newMenu = Menu { _hasDiedBefore = False
                , _selectionOption = 0 }
 
+starSpawnChance :: Float
+starSpawnChance = 0.3
 
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
 
-newParticle :: Point -> Float -> Particle
-newParticle position size = Particle { _partPos  = position
-                                     , _partSize = size }
-
+newParticle :: Point -> Float -> Color -> Particle
+newParticle position size color = Particle { _partPos  = position
+                                           , _partSize = size
+                                           , _partCol  = color }
 
 
 
