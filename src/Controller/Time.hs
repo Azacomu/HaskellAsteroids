@@ -125,7 +125,7 @@ shootPlayer :: MonadState World m => m ()
 shootPlayer = do p     <- use player
                  shoot <- use shootAction
                  player.shootTime -= 1
-                 when (shoot == Shoot && p^.shootTime <= 0) $ do
+                 when (shoot == Shoot && p^.shootTime <= 0 && p^.invincibleTime <= 0) $ do
                     bullets          %= (newBullet (p^.playerPos) (p^.playerDir) :)
                     player.shootTime .= p^.baseShootTime
                     
@@ -215,7 +215,6 @@ instance Collider Bonus where
     collideWith bonus b | filtered == [] = Nothing
                         | otherwise      = Just (b, (head filtered))
                         where filtered = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bonus
-          
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
@@ -242,14 +241,20 @@ getEnemyPoints size num g
 moveEnemies :: MonadState World m => m ()
 moveEnemies = do playerPos  <- use $ player.playerPos
                  playerSize <- use $ player.playerSize
+                 invcT      <- use $ player.invincibleTime
                  enemies.traversed %= moveEnemy playerPos
-                 -- Check if any enemies collide with the player
-                 currentEnemies <- use enemies
-                 let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
-                 when (not $ null collidingEnemies) $ do
-                     player.scoreMul .= 1
-                     player.lives    -= 1
-                     enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
+                 -- Check if any enemies collide with the player (if the player isn't invincible)
+                 if invcT > 0 then
+                     player.invincibleTime -= 1
+                 else do
+                     currentEnemies <- use enemies
+                     let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
+                     when (not $ null collidingEnemies) $ do
+                         player.scoreMul       .= 1
+                         player.lives          -= 1
+                         player.invincibleTime += invincibleTimeAfterCollision
+                         explodeEnemies collidingEnemies
+                         enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy

@@ -57,6 +57,7 @@ data Player = Player { _playerPos   :: Point
                      , _scoreMul    :: Int
                      , _baseShootTime :: Float
                      , _shootTime   :: Float
+                     , _invincibleTime :: Float
                      } deriving (Show, Eq)
 data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
@@ -149,8 +150,13 @@ newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
                    , _scoreMul      = 1
                    , _baseShootTime = 10
                    , _shootTime     = 0
+                   , _invincibleTime = 0
                    }
-                   
+
+-- How much invincible time you have after colliding
+invincibleTimeAfterCollision :: Float
+invincibleTimeAfterCollision = 60
+            
 --Returns a new enemy at a given (random) point, moving in a given dir
 --with given picture and size
 newEnemy :: Point -> Float -> [Point] -> Float -> Enemy
