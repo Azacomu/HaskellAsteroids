@@ -5,17 +5,10 @@ module Controller.Time (
     timeHandler
 ) where
 
-import Control.Arrow ((>>>))
 import Control.Lens
 import Control.Monad
 import Control.Monad.State
-
-import Data.List
 import Data.Maybe
-
-import Graphics.Gloss hiding (Point)
-import Graphics.Gloss.Geometry.Angle
-
 import System.Random
 
 import Helper
@@ -140,8 +133,7 @@ moveBullets = bullets.traversed %= moveBullet
 
 --Moves a bullet
 moveBullet :: Bullet -> Bullet
-moveBullet b = b & bulPos .~ checkPosition newDir 1
-               where newDir = moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
+moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
 
 -- Spawn new bonuses now and then
 spawnBonuses :: MonadState World m => m ()
