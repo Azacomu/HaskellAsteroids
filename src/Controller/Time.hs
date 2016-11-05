@@ -158,17 +158,16 @@ spawnBonuses :: MonadState World m => m ()
 spawnBonuses = do spawner <- use bonusSpawner
                   bonusSpawner.timeToNext -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      playerPos <- use $ player.playerPos
                       spawnPos <- getRandomSpawnPoint
                       bonuses %= (newBonus spawnPos :)
                       bonusSpawner.timeToNext += spawner^.interval
 
 -- Have the player pick up bonuses
 pickupBonuses :: MonadState World m => m ()
-pickupBonuses = do playerPos  <- use $ player.playerPos
-                   playerSize <- use $ player.playerSize
+pickupBonuses = do plrPos  <- use $ player.playerPos
+                   plrSize <- use $ player.playerSize
                    currentBonuses <- use bonuses
-                   let collidingBonuses = filter (\b -> pointDistance playerPos (b^.bonusPos) < bonusSize + playerSize) currentBonuses
+                   let collidingBonuses = filter (\b -> pointDistance plrPos (b^.bonusPos) < bonusSize + plrSize) currentBonuses
                    when (not $ null collidingBonuses) $ do
                        player.scoreMul += 1
                        bonuses %= filter (not . (`elem` collidingBonuses)) -- Destroy any colliding enemies
@@ -180,17 +179,17 @@ updateBullets = do es <- use enemies
                    bn <- use bonuses
                    let colEnemy  = unzip $ mapMaybe (collideWith es) bs
                    let colBonus  = unzip $ mapMaybe (collideWith bn) bs
-                   let infst c x = x `elem` (fst c)
-                   let insnd c x = x `elem` (snd c)
+                   let infst c n = n `elem` fst c
+                   let insnd c n = n `elem` snd c
                    let timeout b = b^.bulTime <= 0
                    player.scoreMul += length (snd colBonus)
-                   sMul         <- use $ player.scoreMul
-                   player.score += length (fst colEnemy) * sMul
-                   bullets      .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
+                   sMul            <- use $ player.scoreMul
+                   player.score    += length (fst colEnemy) * sMul
+                   bullets         .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
                    explodeEnemies $ snd colEnemy
-                   es2 <- use enemies --We can have spawned new enemies
-                   enemies      .= filter (not . (insnd colEnemy)) es2
-                   bonuses      .= filter (not . (insnd colBonus)) bn
+                   es2 <- use enemies --We could have spawned new enemies
+                   enemies         .= filter (not . (insnd colEnemy)) es2
+                   bonuses         .= filter (not . (insnd colBonus)) bn
                    bullets.traversed.bulTime -= 1                
 
 -- Let enemies in the monad explode
@@ -222,23 +221,23 @@ class Collider a where
 --Use enemy size * 1.2 because we use an optimistic hitbox (enemies can be a bit
 -- bigger than their size)
 instance Collider Enemy where
-    collideWith enemies b | filtered == [] = Nothing
-                          | otherwise      = Just (b, (head filtered))
-                          where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize * 1.3)) enemies
+    collideWith es b | flist == [] = Nothing
+                     | otherwise      = Just (b, (head flist))
+                     where flist = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize * 1.3)) es
 
 --Instance to collide bonuses with bullets                          
 instance Collider Bonus where
-    collideWith bonus b | filtered == [] = Nothing
-                        | otherwise      = Just (b, (head filtered))
-                        where filtered = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bonus
+    collideWith bs b | flist == [] = Nothing
+                     | otherwise   = Just (b, (head flist))
+                     where flist = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bs
 
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
 spawnEnemies = do spawner <- use enemySpawner
                   enemySpawner.timeToNext -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      playerPos   <- use $ player.playerPos
-                      spawnPos    <- getRandomSpawnPoint
+                      plrPos     <- use $ player.playerPos
+                      spawnPos   <- getRandomSpawnPoint
                       isFollowing <- getRandomR (0, 1)
                       if isFollowing < followingChance then do
                           enemies %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
@@ -247,7 +246,8 @@ spawnEnemies = do spawner <- use enemySpawner
                           segmentNum  <- getRandomR (5 :: Int, 15)
                           generator   <- use rndGen
                           let edgePoints = getEnemyPoints thisSize segmentNum generator
-                          enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) edgePoints thisSize :)
+                          let dir        = pointDirection spawnPos plrPos
+                          enemies       %= (newEnemy spawnPos dir edgePoints thisSize :)
                       enemySpawner.timeToNext += spawner^.interval
 
 -- Get points forming a following enemy
@@ -271,16 +271,16 @@ getEnemyPoints size num g
 
 -- Move the enemies in the world
 moveEnemies :: MonadState World m => m ()
-moveEnemies = do playerPos  <- use $ player.playerPos
-                 playerSize <- use $ player.playerSize
+moveEnemies = do plrPos     <- use $ player.playerPos
+                 plrSize    <- use $ player.playerSize
                  invcT      <- use $ player.invincibleTime
-                 enemies.traversed %= moveEnemy playerPos
+                 enemies.traversed %= moveEnemy plrPos
                  -- Check if any enemies collide with the player (if the player isn't invincible)
                  if invcT > 0 then
                      player.invincibleTime -= 1
                  else do
                      currentEnemies <- use enemies
-                     let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
+                     let collidingEnemies = filter (\e -> pointDistance plrPos (e^.enemyPos) < (e^.enemySize) + plrSize) currentEnemies
                      -- Collide with player
                      when (not $ null collidingEnemies) $ do
                          player.scoreMul       .= 1
@@ -290,18 +290,18 @@ moveEnemies = do playerPos  <- use $ player.playerPos
                          enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
                          -- Spawn explosion particles
                          replicateM_ 100 $ do
-                             dir        <- getRandomR (0, 2 * pi)
-                             dist       <- getRandomR (0, playerSize)
-                             let partPos = moveDir dir dist playerPos
-                             particles  %= (newParticle partPos 10 white :)
+                             dir            <- getRandomR (0, 2 * pi)
+                             dist           <- getRandomR (0, plrSize)
+                             let particlePos = moveDir dir dist plrPos
+                             particles      %= (newParticle particlePos 10 white :)
 
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
-moveEnemy playerPos e
+moveEnemy plrPos e
     = e & enemyPos .~ if e^.movementType == FixedDirection then
                           checkPosition (moveDir (e^.enemyDir) 5 (e^.enemyPos)) (e^.enemySize)
                       else
-                          moveTo 5 playerPos $ e^.enemyPos
+                          moveTo 5 plrPos $ e^.enemyPos
 
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
