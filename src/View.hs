@@ -31,7 +31,6 @@ draw horizontalResolution verticalResolution world
           <> drawEnemies world
           <> drawBullets world
           <> drawGUI horizontalResolution verticalResolution (world^.player)
-          <> modelPlayer
           <> drawBonuses world
 
 --Returns a circle around given point, in given color, with given radius
@@ -51,8 +50,10 @@ drawEnemies world = pictures $ map drawEnemy (world^.enemies)
 
 --Returns a picture used to draw the player                  
 drawPlayer :: Player -> Picture
-drawPlayer player = drawCircle (player^.playerPos) blue (player^.playerSize)
-                    <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
+drawPlayer player = translate (player^.playerPos^.x) (player^.playerPos^.y) (rotate (radToDeg $ player^.playerDir) modelPlayer)
+
+-- drawCircle (player^.playerPos) blue (player^.playerSize)
+-- <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
                     
 --Draws all bullets as small lines
 drawBullets :: World -> Picture
