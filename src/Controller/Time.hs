@@ -94,20 +94,19 @@ resetKeys = do doesConfirm    .= False
 movePlayer :: MonadState World m => m ()
 movePlayer = do moveAction <- use movementAction
                 when (moveAction == Thrust) $ do
-                    p <- use player
-                    player.playerPos .= moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+                    p                <- use player
+                    let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
                     particles        %= (newParticle (p^.playerPos) 10 yellow :)
-                    checkPlayer
+                    player.playerPos .= checkPosition newDir (p^.playerSize)
                     
---Checks whether the player is still inside the screen                   
-checkPlayer :: MonadState World m => m ()
-checkPlayer = do pos <- use $ player.playerPos
-                 case outsideBounds pos 20 of
-                    East  -> player.playerPos.x -= screenWidth + 20
-                    West  -> player.playerPos.x += screenWidth + 20
-                    North -> player.playerPos.y -= screenHeight + 20
-                    South -> player.playerPos.y += screenHeight + 20
-                    None  -> return ()
+--Checks whether the position with given offset is still inside the screen, if not returns the new position                  
+checkPosition :: Point -> Float -> Point
+checkPosition pos off = case outsideBounds pos off of
+                            East  -> (x -~ screenWidth  + off) pos
+                            West  -> (x +~ screenWidth  + off) pos
+                            North -> (y -~ screenHeight + off) pos
+                            South -> (y +~ screenHeight + off) pos
+                            None  -> pos
 
 --Checks whether given point is outside the screen (with given offset to each side)                  
 outsideBounds :: Point -> Float -> Side
@@ -141,7 +140,8 @@ moveBullets = bullets.traversed %= moveBullet
 
 --Moves a bullet
 moveBullet :: Bullet -> Bullet
-moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
+moveBullet b = b & bulPos .~ checkPosition newDir 1
+               where newDir = moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
 
 -- Spawn new bonuses now and then
 spawnBonuses :: MonadState World m => m ()
@@ -209,10 +209,12 @@ class Collider a where
     collideWith :: [a] -> Bullet -> Maybe (Bullet, a)
     
 --Instance to collide enemies with bullets
+--Use enemy size * 1.2 because we use an optimistic hitbox (enemies can be a bit
+-- bigger than their size)
 instance Collider Enemy where
     collideWith enemies b | filtered == [] = Nothing
                           | otherwise      = Just (b, (head filtered))
-                          where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize)) enemies
+                          where filtered = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize * 1.3)) enemies
 
 --Instance to collide bonuses with bullets                          
 instance Collider Bonus where
@@ -259,22 +261,19 @@ moveEnemies = do playerPos  <- use $ player.playerPos
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy playerPos e
     = e & enemyPos .~ if e^.movementType == FixedDirection then
-                          moveDir (e^.enemyDir) 5 (e^.enemyPos)
+                          checkPosition (moveDir (e^.enemyDir) 5 (e^.enemyPos)) (e^.enemySize)
                       else
                           moveTo 5 playerPos $ e^.enemyPos
-
-starSpawnChance :: Float
-starSpawnChance = 0.7
 
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
 handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
-                 stars %= filter (\star -> star^.starPos.x > -1000)
+                 stars %= filter (\star -> star^.starPos.x > -screenWidth / 2)
                  shouldSpawnStar <- getRandomR (0 :: Float, 1)
                  when (shouldSpawnStar < starSpawnChance) $ do
-                     newStarPos      <- getRandomR (-1000, 1000)
+                     newStarPos      <- getRandomR (-screenHeight / 2, screenHeight / 2)
                      thisSpeed       <- getRandomR (1, 6)
-                     stars %= (newStar (Point { _x = 1000, _y = newStarPos}) thisSpeed :)
+                     stars %= (newStar (Point { _x = screenWidth / 2, _y = newStarPos}) thisSpeed :)
 
 -- Make the particles smaller
 updateParticles :: MonadState World m => m ()
@@ -284,8 +283,8 @@ updateParticles = do particles.traversed.partSize -= 1
 -- Get a random point at a certain minimum distance from the player
 getRandomSpawnPoint :: MonadState World m => m (Point)
 getRandomSpawnPoint = do pPos   <- use $ player.playerPos
-                         spawnX <- getRandomR (-400, 400)
-                         spawnY <- getRandomR (-300, 300)
+                         spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
+                         spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
                          let spawnPos = Point {_x = spawnX, _y = spawnY}
                          if pointDistance spawnPos pPos > 250 then
                              return spawnPos

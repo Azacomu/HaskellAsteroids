@@ -130,8 +130,8 @@ initial seed = World { _gameState      = InMenu
                      , _player         = newPlayer
                      , _enemies        = []
                      , _passedTime     = 0
-                     , _enemySpawner   = newSpawner 60
-                     , _bonusSpawner   = newSpawner 240
+                     , _enemySpawner   = newSpawner 90
+                     , _bonusSpawner   = newSpawner 320
                      , _bullets        = []
                      , _tickTime       = 0
                      , _bonuses        = []
@@ -197,6 +197,8 @@ newMenu :: Menu
 newMenu = Menu { _hasDiedBefore = False
                , _selectionOption = 0 }
 
+starSpawnChance :: Float
+starSpawnChance = 0.3
 
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
@@ -207,7 +209,6 @@ newParticle :: Point -> Float -> Color -> Particle
 newParticle position size color = Particle { _partPos  = position
                                            , _partSize = size
                                            , _partCol  = color }
-
 
 
 
