@@ -74,6 +74,7 @@ data Point  = Point  { _x         :: Float
                      , _y         :: Float
                      } deriving (Show, Eq)
 data Menu   = Menu   { _selectionOption :: Int
+                     , _hasDiedBefore   :: Bool
                      } deriving (Show, Eq)
 data Collision = Collision { _b :: Bullet
                            , _e :: Enemy
@@ -192,7 +193,8 @@ newBullet p d = Bullet { _bulPos   = p
                        }
 
 newMenu :: Menu
-newMenu = Menu { _selectionOption = 0 }
+newMenu = Menu { _hasDiedBefore = False
+               , _selectionOption = 0 }
 
 
 newStar :: Point -> Float -> Star

@@ -74,13 +74,15 @@ setWorldHighscore = do hs <- lift getHighscore
 
 --Changes the world for when the player dies
 diePlayer :: StateT World IO ()
-diePlayer = do score  <- use $ player.score
-               better <- lift $ checkHighscore score 
-               if not better then gameState .= InMenu
-               else do lift $ saveHighscore score
-                       highscore      .= score
-                       isNewHighscore .= True
-                       gameState      .= InMenu
+diePlayer = do scoreT <- use $ player.score
+               better <- lift $ checkHighscore scoreT
+               newSeed <- getRandomR (0, 100000)
+               put $ initial newSeed -- Reset state
+               when better $ do lift $ saveHighscore scoreT
+                                highscore      .= scoreT
+                                isNewHighscore .= True
+               menu.hasDiedBefore .= True
+               player.score       .= scoreT --Set score again
                       
 --Reset some keys that should only be handled on press
 resetKeys :: MonadState World m => m()
