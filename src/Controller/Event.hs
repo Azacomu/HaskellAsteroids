@@ -29,7 +29,10 @@ eventHandler (EventKey (SpecialKey KeyUp   ) Down _ _)
 eventHandler (EventKey (SpecialKey KeyUp   ) Up   _ _)
     = movementAction .~ NoMovement
 eventHandler (EventKey (SpecialKey KeyDown ) Down _ _)
-    = doesSelectNext .~ True
+    =   (movementAction .~ BackThrust)
+      . (doesSelectNext .~ True)
+eventHandler (EventKey (SpecialKey KeyDown ) Up   _ _)
+    = movementAction .~ NoMovement
 eventHandler (EventKey (SpecialKey KeySpace) Down _ _)
     =   (shootAction .~ Shoot)
       . (doesConfirm .~ True)
