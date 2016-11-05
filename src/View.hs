@@ -22,13 +22,15 @@ import MenuView
 --Important uses: http://hackage.haskell.org/package/gloss-1.8.1.2/docs/Graphics-Gloss-Data-Picture.html#t:Picture
 draw :: Float -> Float -> World -> IO Picture
 draw horizontalResolution verticalResolution world
-     = return $ 
+     = return $
       if world^.gameState == InMenu then
           drawMenu horizontalResolution verticalResolution world
       else
           drawPlayer (world^.player)
           <> drawEnemies world
           <> drawBullets world
+          <> drawGUI horizontalResolution verticalResolution (world^.player)
+          <> modelPlayer
 
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
@@ -46,7 +48,6 @@ drawEnemies world = pictures $ map drawEnemy (world^.enemies)
 drawPlayer :: Player -> Picture
 drawPlayer player = drawCircle (player^.playerPos) blue 20
                     <> drawCircle (moveDir (player^.playerDir) 7 (player^.playerPos)) green 5
-                    <> drawScore (player^.score)
                     
 --Draws all bullets as small lines
 drawBullets :: World -> Picture
@@ -55,8 +56,29 @@ drawBullets world = pictures $ map drawBullet (world^.bullets)
                         path b = [toVector $ b^.bulPos, toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
 
 --Draws score on the screen (Temp, must be improved)                        
-drawScore :: Int -> Picture
-drawScore x = Color white (text $ show x)
+drawScore :: Float -> Float -> Int -> Picture
+drawScore hres vres x = translate (-0.5 * hres) (0.5 * vres - 25) (scale 0.2 0.2  (color white (text $ "Score: " ++ show x)))
+
+--Draws the multiplier on the screen
+drawMultiplier :: Float -> Float -> Int -> Picture
+drawMultiplier hres vres x = translate (-0.1 * hres) (0.5 * vres - 25) (scale 0.2 0.2  (color blue (text $ "Multiplier: X" ++ show x ++ "!")))
+
+--Draws the life as a number of small playerModels on the screen
+drawLives :: Float -> Float -> Int -> Picture
+drawLives _ _ 0       = blank
+drawLives hres vres x = pictures (drawLives hres vres (x-1) : [translate (fromIntegral $ x * 30) 0 (scale 0.5 0.5 modelPlayer)])
+
+--Draws all in-game GUI elements
+drawGUI :: Float -> Float -> Player -> Picture
+drawGUI h v player =    drawScore      h v (player^.score)
+                     <> drawMultiplier h v (player^.scoreMul)
+                     <> translate (-0.5 * h) (0.5 * v - 50) (drawLives h v (player^.lives))
+
+--Constant for the picture/graphic used to represent the player (and the remaining lives)
+modelPlayer :: Picture
+modelPlayer = pictures [ color white (line [(-16,-20), (0,20), (16,-20)]) 
+                       , color white (line [(-12,-10), (12,-10)])
+                       , drawCircle Point {_x = 0, _y = 5} green 3 ]
                   
                   
                   
