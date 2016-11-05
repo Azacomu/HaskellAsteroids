@@ -37,7 +37,8 @@ updateMenu = do hasJustDied <- use $ menu.hasDiedBefore
                 confirms    <- use doesConfirm
                 nowSelected <- use $ menu.selectionOption
                 when confirms $
-                    if nowSelected == 0 then
-                        gameState .= InGame
+                    if nowSelected == 0 then do
+                        player.score .= 0
+                        gameState    .= InGame
                     else when (nowSelected == 1) $
                         unsafePerformIO exitSuccess
