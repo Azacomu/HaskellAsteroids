@@ -94,20 +94,19 @@ resetKeys = do doesConfirm    .= False
 movePlayer :: MonadState World m => m ()
 movePlayer = do moveAction <- use movementAction
                 when (moveAction == Thrust) $ do
-                    p <- use player
-                    player.playerPos .= moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+                    p                <- use player
+                    let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+                    player.playerPos .= checkPosition newDir (p^.playerSize)
                     particles        %= (newParticle (p^.playerPos) 10 :)
-                    checkPlayer
                     
---Checks whether the player is still inside the screen                   
-checkPlayer :: MonadState World m => m ()
-checkPlayer = do pos <- use $ player.playerPos
-                 case outsideBounds pos 20 of
-                    East  -> player.playerPos.x -= screenWidth + 20
-                    West  -> player.playerPos.x += screenWidth + 20
-                    North -> player.playerPos.y -= screenHeight + 20
-                    South -> player.playerPos.y += screenHeight + 20
-                    None  -> return ()
+--Checks whether the position with given offset is still inside the screen, if not returns the new position                  
+checkPosition :: Point -> Float -> Point
+checkPosition pos off = case outsideBounds pos off of
+                            East  -> (x -~ screenWidth  + off) pos
+                            West  -> (x +~ screenWidth  + off) pos
+                            North -> (y -~ screenHeight + off) pos
+                            South -> (y +~ screenHeight + off) pos
+                            None  -> pos
 
 --Checks whether given point is outside the screen (with given offset to each side)                  
 outsideBounds :: Point -> Float -> Side
@@ -141,7 +140,8 @@ moveBullets = bullets.traversed %= moveBullet
 
 --Moves a bullet
 moveBullet :: Bullet -> Bullet
-moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
+moveBullet b = b & bulPos .~ checkPosition newDir 1
+               where newDir = moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
 
 -- Spawn new bonuses now and then
 spawnBonuses :: MonadState World m => m ()
@@ -237,7 +237,7 @@ moveEnemies = do playerPos  <- use $ player.playerPos
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy playerPos e
     = e & enemyPos .~ if e^.movementType == FixedDirection then
-                          moveDir (e^.enemyDir) 5 (e^.enemyPos)
+                          checkPosition (moveDir (e^.enemyDir) 5 (e^.enemyPos)) (e^.enemySize)
                       else
                           moveTo 5 playerPos $ e^.enemyPos
 
