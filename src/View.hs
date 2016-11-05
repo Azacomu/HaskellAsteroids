@@ -32,6 +32,7 @@ draw horizontalResolution verticalResolution world
           <> drawBullets world
           <> drawGUI horizontalResolution verticalResolution (world^.player)
           <> drawBonuses world
+          <> drawHighscore horizontalResolution verticalResolution (world^.highscore)
 
 --Returns a circle around given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
@@ -64,6 +65,10 @@ drawBullets world = pictures $ map drawBullet (world^.bullets)
 drawBonuses :: World -> Picture
 drawBonuses world = pictures $ map drawBonus (world^.bonuses)
                   where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow bonusSize
+                  
+--Draws the current highscore on the screen
+drawHighscore :: Float -> Float -> Int -> Picture
+drawHighscore hres vres x = translate (0.5 * hres - 200) (0.5 * vres - 25) (scale 0.2 0.2  (color white (text $ "Highscore: " ++ show x)))
 
 --Draws score on the screen (Temp, must be improved)                        
 drawScore :: Float -> Float -> Int -> Picture
