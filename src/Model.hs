@@ -62,6 +62,7 @@ data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
                      , _enemyDir  :: Float
                      , _enemySize :: Float
+                     , _enemyEdges :: [Point]
                      , _enemyPicture :: Picture
                      } deriving (Show, Eq)
 data Bullet = Bullet { _bulPos    :: Point
@@ -73,6 +74,7 @@ data Point  = Point  { _x         :: Float
                      , _y         :: Float
                      } deriving (Show, Eq)
 data Menu   = Menu   { _selectionOption :: Int
+                     , _hasDiedBefore   :: Bool
                      } deriving (Show, Eq)
 data Collision = Collision { _b :: Bullet
                            , _e :: Enemy
@@ -154,18 +156,22 @@ newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
                    
 --Returns a new enemy at a given (random) point, moving in a given dir
 --with given picture and size
-newEnemy :: Point -> Float -> Picture -> Float -> Enemy
-newEnemy p d picture size = Enemy { _enemyPos     = p
-                                  , _enemySize    = size
-                                  , _movementType = FixedDirection
-                                  , _enemyDir     = d
-                                  , _enemyPicture = picture
-                                  }
+newEnemy :: Point -> Float -> [Point] -> Float -> Enemy
+newEnemy p d edgePoints size = Enemy { _enemyPos     = p
+                                     , _enemySize    = size
+                                     , _movementType = FixedDirection
+                                     , _enemyDir     = d
+                                     , _enemyEdges   = edgePoints --These are the points that make up the shape of the enemy
+                                     , _enemyPicture = getEnemyPic edgePoints
+                                     }
 
-newFollowingEnemy :: Point -> Picture -> Float -> Enemy
-newFollowingEnemy p pic size = set movementType
-                                   FollowPlayer
-                                   $ newEnemy p 0 pic size
+getEnemyPic :: [Point] -> Picture
+getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) $ points
+
+newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
+newFollowingEnemy p pnts size = set movementType
+                                    FollowPlayer
+                                    $ newEnemy p 0 pnts size
 
 newSpawner :: Float -> Spawner
 newSpawner interval = Spawner { _timeToNext = 0
@@ -187,7 +193,8 @@ newBullet p d = Bullet { _bulPos   = p
                        }
 
 newMenu :: Menu
-newMenu = Menu { _selectionOption = 0 }
+newMenu = Menu { _hasDiedBefore = False
+               , _selectionOption = 0 }
 
 
 newStar :: Point -> Float -> Star

@@ -74,13 +74,15 @@ setWorldHighscore = do hs <- lift getHighscore
 
 --Changes the world for when the player dies
 diePlayer :: StateT World IO ()
-diePlayer = do score  <- use $ player.score
-               better <- lift $ checkHighscore score 
-               if not better then gameState .= InMenu
-               else do lift $ saveHighscore score
-                       highscore      .= score
-                       isNewHighscore .= True
-                       gameState      .= InMenu
+diePlayer = do scoreT <- use $ player.score
+               better <- lift $ checkHighscore scoreT
+               newSeed <- getRandomR (0, 100000)
+               put $ initial newSeed -- Reset state
+               when better $ do lift $ saveHighscore scoreT
+                                highscore      .= scoreT
+                                isNewHighscore .= True
+               menu.hasDiedBefore .= True
+               player.score       .= scoreT --Set score again
                       
 --Reset some keys that should only be handled on press
 resetKeys :: MonadState World m => m()
@@ -177,8 +179,8 @@ updateBullets = do es <- use enemies
                    bullets      .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
                    enemies      .= filter (not . (insnd colEnemy)) es
                    bonuses      .= filter (not . (insnd colBonus)) bn
-                   bullets.traversed.bulTime -= 1
-                   
+                   bullets.traversed.bulTime -= 1                
+
 --Class for objects you can collide with
 class Collider a where
     --Checks if there is a collision with a Bullet and returns it
@@ -202,20 +204,21 @@ spawnEnemies :: MonadState World m => m ()
 spawnEnemies = do spawner <- use enemySpawner
                   enemySpawner.timeToNext -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      playerPos <- use $ player.playerPos
-                      spawnPos  <- getRandomSpawnPoint
-                      thisSize  <- getRandomR (15, 45)
-                      enemyPic  <- getEnemyPic thisSize
-                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) enemyPic thisSize :)
+                      playerPos  <- use $ player.playerPos
+                      spawnPos   <- getRandomSpawnPoint
+                      thisSize   <- getRandomR (15, 45)
+                      segmentNum <- getRandomR (5 :: Int, 15)
+                      generator  <- use rndGen
+                      let edgePoints = getEnemyPoints thisSize segmentNum generator
+                      enemies %= (newEnemy spawnPos (pointDirection spawnPos playerPos) edgePoints thisSize :)
                       enemySpawner.timeToNext += spawner^.interval
 
-getEnemyPic :: MonadState World m => Float -> m (Picture)
-getEnemyPic size = do segmentNum <- getRandomR (5 :: Int, 15)
-                      generator <- use rndGen
-                      return (color red $ lineLoop $ getPoints segmentNum segmentNum generator)
-                      where getPoints 0 _ _   = []
-                            getPoints i s gen = (toVector $ moveDir ((fromIntegral i) / (fromIntegral s) * 2 * pi) (size*val) $ Point {_x = 0, _y = 0}) : (getPoints (i - 1) s newGen)
-                                              where (val, newGen) = randomR (1, 1.3) gen
+getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
+getEnemyPoints size num g
+    = helper num g
+    where helper 0 _   = []
+          helper i gen = (moveDir ((fromIntegral i) / (fromIntegral num) * 2 * pi) (size * val) $ Point {_x = 0, _y = 0}) : (helper (i - 1) newGen)
+                          where (val, newGen) = randomR (1, 1.3) gen
 
 -- Move the enemies in the world
 moveEnemies :: MonadState World m => m ()
@@ -227,6 +230,7 @@ moveEnemies = do playerPos  <- use $ player.playerPos
                  let collidingEnemies = filter (\e -> pointDistance playerPos (e^.enemyPos) < (e^.enemySize) + playerSize) currentEnemies
                  when (not $ null collidingEnemies) $ do
                      player.scoreMul .= 1
+                     player.lives    -= 1
                      enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
 
 -- Move a single enemy (needs the player position for tracking enemies)

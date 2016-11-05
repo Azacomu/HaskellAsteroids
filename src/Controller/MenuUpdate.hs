@@ -20,20 +20,25 @@ import System.Exit
 
 import Model
 
-menuOptions :: [String]
-menuOptions = ["Play", "Quit"]
+-- Menu options for the die menu or the normal one
+-- (True if just died)
+menuOptions :: Bool -> [String]
+menuOptions True  = ["Play Again", "Quit"]
+menuOptions False = ["Play", "Quit"]
 
 updateMenu :: MonadState World m => m ()
-updateMenu = do selectsPrev <- use doesSelectPrev
+updateMenu = do hasJustDied <- use $ menu.hasDiedBefore
+                selectsPrev <- use doesSelectPrev
                 when selectsPrev $
                     menu.selectionOption %= (\o -> if o > 0 then o - 1 else o)
                 selectsNext <- use doesSelectNext
                 when selectsNext $
-                    menu.selectionOption %= (\o -> if o + 1 < (length menuOptions) then o + 1 else o)
+                    menu.selectionOption %= (\o -> if o + 1 < (length (menuOptions hasJustDied)) then o + 1 else o)
                 confirms    <- use doesConfirm
                 nowSelected <- use $ menu.selectionOption
                 when confirms $
-                    if nowSelected == 0 then
-                        gameState .= InGame
+                    if nowSelected == 0 then do
+                        player.score .= 0
+                        gameState    .= InGame
                     else when (nowSelected == 1) $
                         unsafePerformIO exitSuccess
