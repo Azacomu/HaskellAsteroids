@@ -47,7 +47,9 @@ drawEnemies world = pictures $ map drawEnemy (world^.enemies)
 
 --Returns a picture used to draw the player                  
 drawPlayer :: Player -> Picture
-drawPlayer player = translate (player^.playerPos^.x) (player^.playerPos^.y) (rotate (radToDeg $ player^.playerDir) $ modelPlayer alpha)
+drawPlayer player = if player^.lives > 0 then
+                        translate (player^.playerPos^.x) (player^.playerPos^.y) (rotate (radToDeg $ player^.playerDir) $ modelPlayer alpha)
+                    else blank
                   where alpha = if player^.invincibleTime > 0 then
                                     0.3
                                 else

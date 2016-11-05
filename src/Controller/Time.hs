@@ -26,7 +26,7 @@ import Graphics.Gloss hiding (Point)
 timeHandler :: Float -> World -> IO World
 timeHandler time world = if world^.endTimer > 0 then do
                              let nWorld = execState reduceEndTimer world
-                             if (nWorld^.endTimer) < 0 then
+                             if (nWorld^.endTimer) <= 0 then
                                  execStateT diePlayer nWorld
                              else
                                  return $ execState (changeWorld time) nWorld
@@ -36,11 +36,11 @@ timeHandler time world = if world^.endTimer > 0 then do
                          else do hsWorld <- execStateT setWorldHighscore world
                                  return $ execState (changeWorld time) hsWorld
                                  
--- End of the world: a few seconds where the player is dead and we 
+-- End of the world: a short time where the player is dead and we 
 -- haven't returned to the main menu yet
                       
 setEndTimer :: MonadState World m => m ()
-setEndTimer = endTimer .= 60
+setEndTimer = endTimer .= 20
 
 reduceEndTimer :: MonadState World m => m ()
 reduceEndTimer = endTimer -= 1
