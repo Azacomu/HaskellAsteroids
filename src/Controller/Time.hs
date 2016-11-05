@@ -109,6 +109,14 @@ movePlayer = do moveAction <- use movementAction
                     let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
                     particles        %= (newParticle (p^.playerPos) 10 yellow :)
                     player.playerPos .= checkPosition newDir (p^.playerSize)
+                when (moveAction == BackThrust && lvs > 0) $ do
+                    p                <- use player
+                    let newDir        = moveDir (p^.playerDir) (p^.playerSpeed / (-2)) (p^.playerPos)
+                    let partPos1      = moveDir (p^.playerDir - (0.5 * pi)) 8 (p^.playerPos)
+                    let partPos2      = moveDir (p^.playerDir + (0.5 * pi)) 8 (p^.playerPos)
+                    particles        %= (newParticle partPos1 5 yellow :)
+                    particles        %= (newParticle partPos2 5 yellow :)
+                    player.playerPos .= checkPosition newDir (p^.playerSize)
                     
 --Checks whether the position with given offset is still inside the screen, if not returns the new position                  
 checkPosition :: Point -> Float -> Point

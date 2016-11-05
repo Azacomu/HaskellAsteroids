@@ -40,7 +40,7 @@ data World = World { _gameState        :: GameState
                    } deriving (Show)
     
 data RotateAction   = NoRotation | RotateLeft | RotateRight deriving (Show, Eq)
-data MovementAction = NoMovement | Thrust                   deriving (Show, Eq)
+data MovementAction = NoMovement | Thrust     | BackThrust  deriving (Show, Eq)
 data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
 
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
