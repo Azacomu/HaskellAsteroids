@@ -9,6 +9,7 @@ import Control.Monad
 import Control.Monad.State
 
 import Graphics.Gloss hiding (Point)
+import Config
 
 -- | Game state
 
@@ -41,6 +42,7 @@ data ShootAction    = Shoot      | DontShoot                deriving (Show, Eq)
 data EnemyMovementType = FixedDirection | FollowPlayer      deriving (Show, Eq)
 data GameState         = InMenu | InGame                    deriving (Show, Eq)
 data BonusType         = ExtraMultiplier                    deriving (Show, Eq)
+data Side = North | South | West | East | None                 deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos   :: Point
@@ -102,6 +104,12 @@ makeLenses ''Bonus
 makeLenses ''Collision
 makeLenses ''Star
 makeLenses ''Particle
+
+--Constants for the size of the screen
+screenWidth  :: Float
+screenHeight :: Float
+screenWidth  = defaultHorizontalResolution
+screenHeight = defaultVerticalResolution
 
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
@@ -174,7 +182,7 @@ newBullet :: Point -> Float -> Bullet
 newBullet p d = Bullet { _bulPos   = p
                        , _bulSpeed = 10
                        , _bulDir   = d
-                       , _bulTime  = 40
+                       , _bulTime  = 60
                        }
 
 newMenu :: Menu
@@ -185,9 +193,7 @@ newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
 
---Returns a collision with given vars
-newCollision :: Bullet -> Enemy -> Collision
-newCollision b e = Collision { _b = b, _e = e}
+
 
 newParticle :: Point -> Float -> Particle
 newParticle position size = Particle { _partPos  = position

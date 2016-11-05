@@ -74,6 +74,29 @@ movePlayer = do moveAction <- use movementAction
                     p <- use player
                     player.playerPos .= moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
                     particles        %= (newParticle (p^.playerPos) 10 :)
+                    checkPlayer
+                    
+--Checks whether the player is still inside the screen and is not dead                    
+checkPlayer :: MonadState World m => m ()
+checkPlayer = do pos <- use $ player.playerPos
+                 case outsideBounds pos 20 of
+                    East  -> player.playerPos.x -= screenWidth
+                    West  -> player.playerPos.x += screenWidth
+                    North -> player.playerPos.y -= screenHeight
+                    South -> player.playerPos.y += screenHeight
+                    None  -> return ()
+
+--Changes the world for when the player dies (TODO)
+diePlayer :: MonadState World m => m ()
+diePlayer = return ()
+
+--Checks whether given point is outside the screen (with given offset to each side)                  
+outsideBounds :: Point -> Float -> Side
+outsideBounds p offset | p^.x - offset > 0.5 * screenWidth   = East
+                       | p^.x + offset < -0.5 * screenWidth  = West
+                       | p^.y - offset > 0.5 * screenHeight  = North
+                       | p^.y + offset < -0.5 * screenHeight = South
+                       | otherwise                           = None
  
 --Rotate the player if needed 
 rotatePlayer :: MonadState World m => m ()
