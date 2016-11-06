@@ -20,17 +20,19 @@ import Controller.MenuUpdate
 --This is where we will change the gameworld (Update)
 --time is the passed time in seconds (gameTime)
 timeHandler :: Float -> World -> IO World
-timeHandler time world = if world^.endTimer > 0 then do
-                             let nWorld = execState reduceEndTimer world
-                             if (nWorld^.endTimer) <= 0 then
-                                 execStateT diePlayer nWorld
-                             else
-                                 execStateT (changeWorld time) nWorld
-                         else if world^.player^.lives <= 0 then
-                             return $ execState setEndTimer world
-                         else if world^.isHighSet then execStateT (changeWorld time) world
-                         else do hsWorld <- execStateT setWorldHighscore world
-                                 execStateT (changeWorld time) hsWorld
+timeHandler time world | world^.endTimer > 0 = 
+                         do let nWorld = execState reduceEndTimer world
+                            if  nWorld^.endTimer <= 0 then
+                                execStateT diePlayer nWorld
+                            else
+                                execStateT (changeWorld time) nWorld
+                        | world^.player^.lives <= 0 =
+                          return $ execState setEndTimer world
+                        | world^.isHighSet = 
+                          execStateT (changeWorld time) world
+                        | otherwise = 
+                          do hsWorld <- execStateT setWorldHighscore world
+                             execStateT (changeWorld time) hsWorld
                                  
 -- End of the world: a short time where the player is dead and we 
 -- haven't returned to the main menu yet
@@ -312,10 +314,11 @@ moveEnemies = do plrPos     <- use $ player.playerPos
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy plrPos e
-    = e & enemyPos .~ if e^.movementType == FixedDirection then
-                          checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
-                      else
-                          moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
+    = e & enemyPos .~ 
+      if e^.movementType == FixedDirection then
+         checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
+      else
+         moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
 
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
@@ -348,10 +351,10 @@ getRandomR :: (MonadState World m, Random a) => (a, a) -> m a
 getRandomR range = do generator <- use rndGen
                       let (r, g) = randomR range generator
                       rndGen .= g
-                      return $ r
+                      return r
 
-getRandom :: (MonadState World m, Random a) => m (a)
+getRandom :: (MonadState World m, Random a) => m a
 getRandom = do generator <- use rndGen
                let (r, g) = random generator
                rndGen .= g
-               return $ r
+               return r
