@@ -9,6 +9,10 @@ import Controller.MenuUpdate
 
 import Model
 
+--Constant for the text base
+textBaseH :: Num a => a
+textBaseH = 110
+
 drawMenu :: Float -> Float -> World -> Picture
 drawMenu horizontalResolution verticalResolution world
     =        translate left top $ scaleBoth worldScale $ color white $
@@ -18,7 +22,6 @@ drawMenu horizontalResolution verticalResolution world
     where worldScale      = verticalResolution / 576
           top             = verticalResolution / 2
           left            = horizontalResolution / (-2)
-          textBaseH       = 110
           (drawOptions,_) = foldl (drawMenuOption world) (blank, 0) $ menuOptions isDieMenu
           isDieMenu       = world^.menu.hasDiedBefore
           getTitle    = if isDieMenu then
@@ -29,15 +32,14 @@ drawMenu horizontalResolution verticalResolution world
                             if world^.isNewHighscore then
                                 scoreText ++ "new highscore!"
                             else
-                                scoreText ++ "highscore: " ++ (show $ world^.highscore)
+                                scoreText ++ "highscore: " ++ show (world^.highscore)
                         else
                             "By Martin Boers and Florian van Strien"
-                        where scoreText = "Score: " ++ (show $ world^.player.score) ++ "; "
+                        where scoreText = "Score: " ++ show (world^.player.score) ++ "; "
                         
 drawMenuOption :: World -> (Picture, Int) -> String -> (Picture, Int)
 drawMenuOption world (picture, i) option = (picture <> newPicture, i + 1)
-                        where textBaseH  = 110
-                              selected   = world^.menu.selectionOption
+                        where selected   = world^.menu.selectionOption
                               newPicture = translate 10 transY (scaleBoth 0.3 $ text $ optionText option i)
                               transY     = -35 - textBaseH * (1 + 0.3 * fromIntegral i) - 15 * fromIntegral i 
                               optionText :: String -> Int -> String
