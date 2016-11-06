@@ -51,7 +51,7 @@ drawMenu horizontalResolution verticalResolution world
                                             "new highscore!"
                                         else
                                             "highscore: " ++
-                                                (show $ world^.highscore)
+                                                show (world^.highscore)
                       -- Credits
                       | otherwise = "By Martin Boers and Florian van Strien"
                        
