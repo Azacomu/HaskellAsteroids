@@ -9,39 +9,59 @@ import Controller.MenuUpdate
 
 import Model
 
---Constant for the text base
+-- Constant for the text base height
+-- This is the height at which unscaled text is normally drawn
 textBaseH :: Num a => a
 textBaseH = 110
 
+-- Draw the menu using the horizontal and vertical resolution
 drawMenu :: Float -> Float -> World -> Picture
 drawMenu horizontalResolution verticalResolution world
-    =        translate left top $ scaleBoth worldScale $ color white $
-             translate 10 (textBaseH * (-0.5) - 10) (scaleBoth 0.5 $ text getTitle)
-          <> translate 10 (textBaseH * (-0.7) - 20) (scaleBoth 0.2 $ text getSubTitle)
+    = -- Make sure everything is drawn at the right position and with the right
+      -- color    
+      translate left top $ scaleBoth worldScale $ color white $
+             -- Draw the title
+             translate 10
+                       (textBaseH * (-0.5) - 10)
+                       (scaleBoth 0.5 $ text getTitle)
+             -- Draw the subtitle
+          <> translate 10
+                       (textBaseH * (-0.7) - 20)
+                       (scaleBoth 0.2 $ text getSubTitle)
+             -- Draw the options
           <> drawOptions
-    where worldScale      = verticalResolution / 576
-          top             = verticalResolution / 2
-          left            = horizontalResolution / (-2)
-          (drawOptions,_) = foldl (drawMenuOption world) (blank, 0) $ menuOptions isDieMenu
-          isDieMenu       = world^.menu.hasDiedBefore
-          getTitle    = if isDieMenu then
-                            "You died!"
-                        else
-                            "Hasteroids"
-          getSubTitle = if isDieMenu then
-                            if world^.isNewHighscore then
-                                scoreText ++ "new highscore!"
-                            else
-                                scoreText ++ "highscore: " ++ show (world^.highscore)
-                        else
-                            "By Martin Boers and Florian van Strien"
-                        where scoreText = "Score: " ++ show (world^.player.score) ++ "; "
-                        
-drawMenuOption :: World -> (Picture, Int) -> String -> (Picture, Int)
-drawMenuOption world (picture, i) option = (picture <> newPicture, i + 1)
-                        where selected   = world^.menu.selectionOption
-                              newPicture = translate 10 transY (scaleBoth 0.3 $ text $ optionText option i)
-                              transY     = -35 - textBaseH * (1 + 0.3 * fromIntegral i) - 15 * fromIntegral i 
-                              optionText :: String -> Int -> String
-                              optionText opt num | num == selected = '>' : opt
-                                                 | otherwise       =       opt
+    where -- The scale of the display
+          worldScale  = verticalResolution / 576
+          -- The top and left positions on the screen
+          top         = verticalResolution / 2
+          left        = horizontalResolution / (-2)
+          -- Draw the menu options
+          drawOptions = foldl (<>) blank $ indexedMap (drawMenuOption world) $
+                                                      menuOptions isDieMenu
+          -- Get if this is the death menu
+          isDieMenu   = world^.menu.hasDiedBefore
+          -- Get the title of the menu
+          getTitle    | isDieMenu = "You died!"
+                      | otherwise = "Hasteroids"
+          -- Get the subtitle of the menu
+          getSubTitle --Scores 
+                      | isDieMenu = "Score: " ++ show (world^.player.score) ++
+                                        "; " ++
+                                        if world^.isNewHighscore then
+                                            "new highscore!"
+                                        else
+                                            "highscore: " ++
+                                                (show $ world^.highscore)
+                      -- Credits
+                      | otherwise = "By Martin Boers and Florian van Strien"
+                       
+-- Draw a single option of the menu 
+-- Uses the world, the text of the option and the index
+-- Returns a picture with the drawn menu option
+drawMenuOption :: World -> String -> Int -> Picture
+drawMenuOption world option i
+    = translate 10 transY $ scaleBoth 0.3 $ text optionText
+    where transY     = -35 - 15 * i' - textBaseH * (1 + 0.3 * i')
+          i'         = fromIntegral i
+          optionText | i == world^.menu.selectionOption = '>' : option
+                     | otherwise                        =       option
