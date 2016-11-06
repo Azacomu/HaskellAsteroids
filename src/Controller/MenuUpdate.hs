@@ -23,7 +23,7 @@ updateMenu = do hasJustDied <- use $ menu.hasDiedBefore -- Whether we just died
                 selectsPrev <- use doesSelectPrev
                 when selectsPrev $
                     menu.selectionOption %= max 0 . subtract 1
-                -- Go the the next menu option if wanted
+                -- Go the the next menu option if selected
                 selectsNext <- use doesSelectNext
                 when selectsNext $
                     menu.selectionOption %= min (menuOptionNum - 1) . (+) 1
@@ -31,6 +31,8 @@ updateMenu = do hasJustDied <- use $ menu.hasDiedBefore -- Whether we just died
                 confirms    <- use doesConfirm
                 nowSelected <- use $ menu.selectionOption
                 when confirms $
-                    case nowSelected of 0 -> do player.score .= 0
+                    case nowSelected of -- Play
+                                        0 -> do player.score .= 0
                                                 gameState    .= InGame
+                                        -- Quit
                                         1 -> lift exitSuccess
