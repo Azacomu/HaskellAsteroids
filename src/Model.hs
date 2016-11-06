@@ -45,7 +45,6 @@ data Side              = North  | South | West | East | None deriving (Show, Eq)
 data GameState         = InMenu | InGame                     deriving (Show, Eq)
 data BonusType         = ExtraMultiplier                     deriving (Show, Eq)
 
---TODO: Add more datatypes here (player/enemy/etc.)
 data Player = Player { _playerPos      :: Point
                      , _playerSize     :: Float
                      , _playerSpeed    :: Float
@@ -197,17 +196,21 @@ newEnemy p d edgePoints size speed
             , _enemySpeed   = speed
             }
 
+-- Get a picture of an enemy based on a list of points
 getEnemyPic :: [Point] -> Picture
 getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) points
 
+-- Create a new enemy which follows the player
 newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
 newFollowingEnemy p pnts size = set movementType FollowPlayer
                                     $ newEnemy p 0 pnts size followingEnemySpeed
 
+-- Create a new spawner of something with a given time interval
 newSpawner :: Float -> Spawner
 newSpawner intval = Spawner { _timeToNext = intval - 1
                             , _interval   = intval }
 
+-- Create a new bonus at a given position
 newBonus :: Point -> Bonus
 newBonus position = Bonus { _bonusPos = position }
 
@@ -219,20 +222,19 @@ newBullet p d = Bullet { _bulPos   = p
                        , _bulTime  = 60
                        }
 
+-- Create the menu
 newMenu :: Menu
 newMenu = Menu { _hasDiedBefore   = False
                , _selectionOption = 0 }
 
+-- Create a new start at a given position with a given speed
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
 
+-- Create a new particle, given the position, size and color.
 newParticle :: Point -> Float -> Color -> Particle
 newParticle position size col = Particle { _partPos  = position
                                          , _partSize = size
                                          , _partCol  = col }
-
-
-
-

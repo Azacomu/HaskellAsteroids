@@ -36,10 +36,14 @@ timeHandler time world | world^.endTimer > 0 =
                                  
 -- End of the world: a short time where the player is dead and we 
 -- haven't returned to the main menu yet
-                      
+                 
+-- Set the final timer; this should happen when the player loses their last
+-- life     
 setEndTimer :: MonadState World m => m ()
 setEndTimer = endTimer .= 20
 
+-- Reduce the end timer; this should happen each Update after the player has
+-- lost their last life
 reduceEndTimer :: MonadState World m => m ()
 reduceEndTimer = endTimer -= 1
 
@@ -160,13 +164,16 @@ moveBullet :: Bullet -> Bullet
 moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
 
 -- Spawn new bonuses now and then
+-- Uses a bonus spawner to keep track of the time until the next bonus appears
 spawnBonuses :: MonadState World m => m ()
 spawnBonuses = do spawner      <- use bonusSpawner
                   let timeNextB = bonusSpawner.timeToNext
                   timeNextB    -= 1
                   when (spawner^.timeToNext <= 0) $ do
+                      -- Actually spawn a bonus!
                       spawnPos  <- getRandomSpawnPoint
                       bonuses   %= (newBonus spawnPos :)
+                      -- And reset the timer
                       timeNextB += spawner^.interval
 
 -- Have the player pick up bonuses
@@ -175,10 +182,12 @@ pickupBonuses :: MonadState World m => m ()
 pickupBonuses = do plrPos              <- use $ player.playerPos
                    plrSize             <- use $ player.playerSize
                    currentBonuses      <- use bonuses
+                   -- Check which bonuses the player finds
                    let plrPickup b      = pointDistance plrPos (b^.bonusPos) < bonusSize + plrSize
                    let collidingBonuses = filter plrPickup currentBonuses
                    unless (null collidingBonuses) $ do
-                       player.scoreMul += 1
+                       -- Destroy the bonuses and add to the score multiplier
+                       player.scoreMul += length collidingBonuses
                        bonuses         %= filter (not . (`elem` collidingBonuses))
 
 --Checks whether bullets collide and updates the lifetime and deletes the bullet if it times out
@@ -206,10 +215,11 @@ updateBullets = do es <- use enemies
 explodeEnemies :: MonadState World m => [Enemy] -> m ()
 explodeEnemies []           = return ()
 explodeEnemies (thisE:allE)
-    = do explodeEnemies allE
+    = do explodeEnemies allE -- Let the other enemies explode
+         -- Add particles
          let addPart p =  newParticle (p `addPoints` (thisE^.enemyPos)) 10 red
          particles    %= (map addPart (thisE^.enemyEdges) ++)
-         -- Spawn new enemies if the enemies was very big
+         -- Spawn new enemies if the enemy was very big
          when (thisE^.enemySize > 30) $ do
              startingAngle <- getRandomR (0, pi / 2)
              spawnE startingAngle
@@ -217,7 +227,7 @@ explodeEnemies (thisE:allE)
              spawnE $ startingAngle + pi
              spawnE $ startingAngle + pi * 1.5
     where
-        spawnE angle
+        spawnE angle -- Spawn an enemy at a given angle from the old enemy
          = do segmentNum <- getRandomR (5 :: Int, 10)
               generator  <- use rndGen
               let newSize = thisE^.enemySize / 2
@@ -235,17 +245,22 @@ spawnEnemies
          let timeNextE = enemySpawner.timeToNext
          timeNextE    -= 1
          when (spawner^.timeToNext <= 0) $ do
+             -- We need to spawn a new enemy!
              plrPos         <- use $ player.playerPos
              spawnPos       <- getRandomSpawnPoint
              isFollowing    <- getRandom
              timeNextE      += spawner^.interval
+             -- Check what type of enemy we should spawn
              if isFollowing < followingChance then
+                 -- Spawn an enemy which follows the player
                  enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
              else do
+                 -- Spawn a asteroid
                  thisSize   <- getRandomR (15, 45)
                  segmentNum <- getRandomR (5, 15)
                  spd        <- getRandomR (3, 5)
                  generator  <- use rndGen
+                 -- Create a random sprite
                  let eps     = getEnemyPoints thisSize segmentNum generator
                  let dir     = pointDirection spawnPos plrPos
                  enemies    %= (newEnemy spawnPos dir eps thisSize spd :)
@@ -263,13 +278,23 @@ getFollowingEnemyPoints = [ Point {_x = 0  , _y = 0  }
                           , Point {_x = 16 , _y = 0  }
                           ]
 
+-- Get points forming an asteroid-like shape, given the size of this shape, the
+-- number of points and a random generator
+-- This works by making a circle-like shape with some random deviations of the
+-- points
 getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
 getEnemyPoints size num g
     = helper num g
-    where helper 0 _   = []
+    where -- The helper creates a single point, given the index of that point
+          -- and a random generator.
+          helper 0 _   = []
           helper i gen = moveDir direction (size * val) (newPoint 0 0) : helper (i - 1) newGen
-                         where (val, newGen) = randomR (1, 1.3) gen
-                               direction     = fromIntegral i / fromIntegral num * 2 * pi
+                       where -- Get a random deviation from the circle between
+                             -- 1 and 1.3.
+                             (val, newGen) = randomR (1, 1.3) gen
+                             -- Get the direction of the current point from
+                             -- the center point of the circle
+                             direction     = fromIntegral i / fromIntegral num * 2 * pi
                                
 
 -- Move the enemies in the world, Collide them with the player
@@ -287,14 +312,16 @@ moveEnemies = do plrPos     <- use $ player.playerPos
                      let getDist e        = pointDistance plrPos (e^.enemyPos)
                      let plrHit e         = getDist e < (e^.enemySize) + plrSize
                      let collidingEnemies = filter plrHit currentEnemies
-                     -- Collide with player
+                     -- Collide with player. Reset the score multiplier, remove
+                     -- on life, make the player invincible for a while, remove
+                     -- the colliding enemy and make it explode.
                      unless (null collidingEnemies) $ do
                          player.scoreMul       .= 1
                          player.lives          -= 1
                          player.invincibleTime += invincibleTimeAfterCollision
                          enemies               %= filter (not . (`elem` collidingEnemies))
                          explodeEnemies collidingEnemies
-                         -- Spawn explosion particles
+                         -- Spawn explosion particles for the player
                          replicateM_ 100 $ do
                              dir            <- getRandomR (0, 2 * pi)
                              dist           <- getRandomR (0, plrSize)
@@ -306,16 +333,21 @@ moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy plrPos e
     = e & enemyPos .~ 
       if e^.movementType == FixedDirection then
-         checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
+          -- Move the enemy in the original direction
+          checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
       else
-         moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
+          -- Move towards the player
+          moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
 
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
-handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
+handleStars = do -- Move all stars
+                 stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
+                 -- Remove stars that get outside of the screen
                  stars           %= filter (\star -> star^.starPos.x > -screenWidth / 2)
                  shouldSpawnStar <- getRandom
                  when (shouldSpawnStar < starSpawnChance) $ do
+                     -- Spawn a new star!
                      newStarPos <- getRandomR (-screenHeight / 2, screenHeight / 2)
                      thisSpeed  <- getRandomR (1, 6)
                      stars      %= (newStar (newPoint (screenWidth / 2) newStarPos) thisSpeed :)
@@ -331,18 +363,21 @@ getRandomSpawnPoint = do pPos   <- use $ player.playerPos
                          spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
                          spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
                          let spawnPos = newPoint spawnX spawnY
+                         -- Check if the calculated point is far enough from
+                         -- the player
                          if  pointDistance spawnPos pPos > 300 then
-                             return spawnPos
+                             return spawnPos     -- Yes, it is! Return it.
                          else
-                             getRandomSpawnPoint
+                             getRandomSpawnPoint -- No, get a new one.
 
--- Get a random value using the world state
+-- Get a random value in a range using the world state
 getRandomR :: (MonadState World m, Random a) => (a, a) -> m a
 getRandomR range = do generator <- use rndGen
                       let (r, g) = randomR range generator
                       rndGen    .= g
                       return r
 
+-- Get a random value using the world state (in the default range)
 getRandom :: (MonadState World m, Random a) => m a
 getRandom = do generator <- use rndGen
                let (r, g) = random generator
