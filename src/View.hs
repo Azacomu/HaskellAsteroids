@@ -53,7 +53,8 @@ drawPlayer plr | plr^.lives > 0 = trans $ rotate (radToDeg $ plr^.playerDir) $ m
 drawBullets :: World -> Picture
 drawBullets world = pictures $ map drawBullet (world^.bullets)
                   where drawBullet b = color green $ line $ path b
-                        path b       = [toVector $ b^.bulPos, toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
+                        path b       = [toVector $ b^.bulPos
+                                       ,toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
 
 drawBonuses :: World -> Picture
 drawBonuses world = pictures $ map drawBonus (world^.bonuses)
@@ -78,7 +79,8 @@ drawMultiplier hres vres n = translate (-0.1 * hres) (0.5 * vres - 25) $
 drawLives :: Float -> Float -> Int -> Picture
 drawLives _ _ 0       = blank
 drawLives hres vres n = pictures $ drawLives hres vres (n-1) : [picture]
-                        where picture = translate (fromIntegral $ n * 30) 0 (scaleBoth 0.5 $ modelPlayer 1)
+                        where picture = translate (fromIntegral $ n * 30) 0 $
+                                        scaleBoth 0.5 $ modelPlayer 1
 
 --Draws all in-game GUI elements
 drawGUI :: Float -> Float -> Player -> Picture
@@ -96,8 +98,13 @@ modelPlayer alpha = pictures [ color col1 (line [(-16,-20), (0,20), (16,-20)])
                   
 drawStars :: World -> Picture
 drawStars world = pictures $ map drawStar (world^.stars)
-                where drawStar star = drawCircleSolid (star^.starPos) (makeColor 1 1 1 $ star^.starSpeed / 7) (star^.starSpeed)
+                where drawStar star = drawCircleSolid (star^.starPos) 
+                                     (makeColor 1 1 1 $ star^.starSpeed / 7) 
+                                     (star^.starSpeed)
                 
 drawParticles :: World -> Picture
 drawParticles world = pictures $ map drawPart (world^.particles)
-                    where drawPart part = drawCircleSolid (part^.partPos) (part^.partCol) (part^.partSize)
+                    where drawPart part = drawCircleSolid (part^.partPos) 
+                                         (part^.partCol)  (part^.partSize)
+                    
+                    
