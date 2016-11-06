@@ -25,12 +25,12 @@ timeHandler time world = if world^.endTimer > 0 then do
                              if (nWorld^.endTimer) <= 0 then
                                  execStateT diePlayer nWorld
                              else
-                                 return $ execState (changeWorld time) nWorld
+                                 execStateT (changeWorld time) nWorld
                          else if world^.player^.lives <= 0 then
                              return $ execState setEndTimer world
-                         else if world^.isHighSet then return $ execState (changeWorld time) world
+                         else if world^.isHighSet then execStateT (changeWorld time) world
                          else do hsWorld <- execStateT setWorldHighscore world
-                                 return $ execState (changeWorld time) hsWorld
+                                 execStateT (changeWorld time) hsWorld
                                  
 -- End of the world: a short time where the player is dead and we 
 -- haven't returned to the main menu yet
@@ -52,7 +52,7 @@ reduceEndTimer = endTimer -= 1
 --(Identity is a monad, that returns the normal value, runIdentity :: a)
 
 --Change the world in the MonadState
-changeWorld :: MonadState World m => Float -> m ()
+changeWorld :: Float -> StateT World IO ()
 changeWorld time = do curState <- use gameState
                       if curState == InMenu then
                           updateMenu
