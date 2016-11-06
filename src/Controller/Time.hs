@@ -20,17 +20,19 @@ import Controller.MenuUpdate
 --This is where we will change the gameworld (Update)
 --time is the passed time in seconds (gameTime)
 timeHandler :: Float -> World -> IO World
-timeHandler time world = if world^.endTimer > 0 then do
-                             let nWorld = execState reduceEndTimer world
-                             if (nWorld^.endTimer) <= 0 then
-                                 execStateT diePlayer nWorld
-                             else
-                                 execStateT (changeWorld time) nWorld
-                         else if world^.player^.lives <= 0 then
-                             return $ execState setEndTimer world
-                         else if world^.isHighSet then execStateT (changeWorld time) world
-                         else do hsWorld <- execStateT setWorldHighscore world
-                                 execStateT (changeWorld time) hsWorld
+timeHandler time world | world^.endTimer > 0 = 
+                         do let nWorld = execState reduceEndTimer world
+                            if  nWorld^.endTimer <= 0 then
+                                execStateT diePlayer nWorld
+                            else
+                                execStateT (changeWorld time) nWorld
+                        | world^.player^.lives <= 0 =
+                          return $ execState setEndTimer world
+                        | world^.isHighSet = 
+                          execStateT (changeWorld time) world
+                        | otherwise = 
+                          do hsWorld <- execStateT setWorldHighscore world
+                             execStateT (changeWorld time) hsWorld
                                  
 -- End of the world: a short time where the player is dead and we 
 -- haven't returned to the main menu yet
@@ -100,19 +102,19 @@ resetKeys = do doesConfirm    .= False
 movePlayer :: MonadState World m => m ()
 movePlayer = do moveAction <- use movementAction
                 lvs        <- use $ player.lives
+                p          <- use player
+                let plrPos  = player.playerPos
                 when (moveAction == Thrust && lvs > 0) $ do
-                    p                <- use player
-                    let newDir        = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
-                    particles        %= (newParticle (p^.playerPos) 10 yellow :)
-                    player.playerPos .= checkPosition newDir (p^.playerSize)
+                    let newDir    = moveDir (p^.playerDir) (p^.playerSpeed) (p^.playerPos)
+                    particles    %= (newParticle (p^.playerPos) 10 yellow :)
+                    plrPos       .= checkPosition newDir (p^.playerSize)
                 when (moveAction == BackThrust && lvs > 0) $ do
-                    p                <- use player
-                    let newDir        = moveDir (p^.playerDir) (p^.playerSpeed / (-2)) (p^.playerPos)
-                    let partPos1      = moveDir (p^.playerDir - (0.5 * pi)) 8 (p^.playerPos)
-                    let partPos2      = moveDir (p^.playerDir + (0.5 * pi)) 8 (p^.playerPos)
-                    particles        %= (newParticle partPos1 5 yellow :)
-                    particles        %= (newParticle partPos2 5 yellow :)
-                    player.playerPos .= checkPosition newDir (p^.playerSize)
+                    let newDir    = moveDir (p^.playerDir) (p^.playerSpeed / (-2)) (p^.playerPos)
+                    let partPos1  = moveDir (p^.playerDir - (0.5 * pi)) 8 (p^.playerPos)
+                    let partPos2  = moveDir (p^.playerDir + (0.5 * pi)) 8 (p^.playerPos)
+                    particles    %= (newParticle partPos1 5 yellow :)
+                    particles    %= (newParticle partPos2 5 yellow :)
+                    plrPos       .= checkPosition newDir (p^.playerSize)
                     
 --Checks whether the position with given offset is still inside the screen, if not returns the new position                  
 checkPosition :: Point -> Float -> Point
@@ -142,16 +144,16 @@ rotatePlayer = do rAction <- use rotateAction
 
 --Shoots if the player wants to shoot and the time since the last shot is long enough                    
 shootPlayer :: MonadState World m => m ()
-shootPlayer = do p     <- use player
-                 shoot <- use shootAction
+shootPlayer = do p                <- use player
+                 shoot            <- use shootAction
                  player.shootTime -= 1
-                 when (shoot == Shoot && p^.shootTime <= 0 && p^.invincibleTime <= 0) $ do
-                    bullets          %= (newBullet (p^.playerPos) (p^.playerDir) :)
-                    player.shootTime .= p^.baseShootTime
+                 when (shoot == Shoot && p^.shootTime <= 0 && p^.invincibleTime <= 0) $
+                  do bullets          %= (newBullet (p^.playerPos) (p^.playerDir) :)
+                     player.shootTime .= p^.baseShootTime
                     
 --Moves all bullets
 moveBullets :: MonadState World m => m ()
-moveBullets = bullets.traversed %= moveBullet
+moveBullets = allBullets %= moveBullet
 
 --Moves a bullet
 moveBullet :: Bullet -> Bullet
@@ -159,22 +161,25 @@ moveBullet b = b & bulPos .~ moveDir (b^.bulDir) (b^.bulSpeed) (b^.bulPos)
 
 -- Spawn new bonuses now and then
 spawnBonuses :: MonadState World m => m ()
-spawnBonuses = do spawner <- use bonusSpawner
-                  bonusSpawner.timeToNext -= 1
+spawnBonuses = do spawner      <- use bonusSpawner
+                  let timeNextB = bonusSpawner.timeToNext
+                  timeNextB    -= 1
                   when (spawner^.timeToNext <= 0) $ do
-                      spawnPos <- getRandomSpawnPoint
-                      bonuses %= (newBonus spawnPos :)
-                      bonusSpawner.timeToNext += spawner^.interval
+                      spawnPos  <- getRandomSpawnPoint
+                      bonuses   %= (newBonus spawnPos :)
+                      timeNextB += spawner^.interval
 
 -- Have the player pick up bonuses
+-- And destroy those bonusses afterwards (so they can't be picked up multiple times)
 pickupBonuses :: MonadState World m => m ()
-pickupBonuses = do plrPos  <- use $ player.playerPos
-                   plrSize <- use $ player.playerSize
-                   currentBonuses <- use bonuses
-                   let collidingBonuses = filter (\b -> pointDistance plrPos (b^.bonusPos) < bonusSize + plrSize) currentBonuses
+pickupBonuses = do plrPos              <- use $ player.playerPos
+                   plrSize             <- use $ player.playerSize
+                   currentBonuses      <- use bonuses
+                   let plrPickup b      = pointDistance plrPos (b^.bonusPos) < bonusSize + plrSize
+                   let collidingBonuses = filter plrPickup currentBonuses
                    unless (null collidingBonuses) $ do
                        player.scoreMul += 1
-                       bonuses %= filter (not . (`elem` collidingBonuses)) -- Destroy any colliding enemies
+                       bonuses         %= filter (not . (`elem` collidingBonuses))
 
 --Checks whether bullets collide and updates the lifetime and deletes the bullet if it times out
 updateBullets :: MonadState World m => m ()
@@ -186,22 +191,24 @@ updateBullets = do es <- use enemies
                    let infst c n = n `elem` fst c
                    let insnd c n = n `elem` snd c
                    let timeout b = b^.bulTime <= 0
-                   player.scoreMul += length (snd colBonus)
-                   sMul            <- use $ player.scoreMul
-                   player.score    += length (fst colEnemy) * sMul
-                   bullets         .= filter (\b -> not (infst colEnemy b || infst colBonus b || timeout b)) bs
-                   explodeEnemies $ snd colEnemy
-                   es2 <- use enemies --We could have spawned new enemies
-                   enemies         .= filter (not . insnd colEnemy) es2
-                   bonuses         .= filter (not . insnd colBonus) bn
-                   bullets.traversed.bulTime -= 1                
+                   let bFilter b = not (infst colEnemy b || infst colBonus b || timeout b)
+                   player.scoreMul    += length (snd colBonus)
+                   sMul               <- use $ player.scoreMul
+                   player.score       += length (fst colEnemy) * sMul
+                   bullets            .= filter bFilter bs
+                   explodeEnemies      $ snd colEnemy
+                   es2                <- use enemies --We could have spawned new enemies
+                   enemies            .= filter (not . insnd colEnemy) es2
+                   bonuses            .= filter (not . insnd colBonus) bn
+                   allBullets.bulTime -= 1                
 
 -- Let enemies in the monad explode
 explodeEnemies :: MonadState World m => [Enemy] -> m ()
 explodeEnemies []           = return ()
 explodeEnemies (thisE:allE)
     = do explodeEnemies allE
-         particles %= (map (\p -> newParticle (p `addPoints` (thisE^.enemyPos)) 10 red) (thisE^.enemyEdges) ++)
+         let addPart p =  newParticle (p `addPoints` (thisE^.enemyPos)) 10 red
+         particles    %= (map addPart (thisE^.enemyEdges) ++)
          -- Spawn new enemies if the enemies was very big
          when (thisE^.enemySize > 30) $ do
              startingAngle <- getRandomR (0, pi / 2)
@@ -221,24 +228,6 @@ explodeEnemies (thisE:allE)
                                    newSize
                                    (thisE^.enemySpeed) :)
 
---Class for objects you can collide with
-class Collider a where
-    --Checks if there is a collision with a Bullet and returns it
-    collideWith :: [a] -> Bullet -> Maybe (Bullet, a)
-    
---Instance to collide enemies with bullets
---Use enemy size * 1.3 because we use an optimistic hitbox (enemies can be a bit bigger than their size)
-instance Collider Enemy where
-    collideWith es b | null flist = Nothing
-                     | otherwise  = Just (b, head flist)
-                     where flist = filter (\e -> pointDistance (e^.enemyPos) (b^.bulPos) < (e^.enemySize * 1.3)) es
-
---Instance to collide bonuses with bullets                          
-instance Collider Bonus where
-    collideWith bs b | null flist = Nothing
-                     | otherwise  = Just (b, head flist)
-                     where flist = filter (\bo -> pointDistance (bo^.bonusPos) (b^.bulPos) < bonusSize) bs
-
 -- Spawn new enemies every now and then
 spawnEnemies :: MonadState World m => m ()
 spawnEnemies
@@ -246,14 +235,12 @@ spawnEnemies
          let timeNextE = enemySpawner.timeToNext
          timeNextE    -= 1
          when (spawner^.timeToNext <= 0) $ do
-             plrPos        <- use $ player.playerPos
-             spawnPos      <- getRandomSpawnPoint
-             isFollowing   <- getRandom
-             timeNextE     += spawner^.interval
+             plrPos         <- use $ player.playerPos
+             spawnPos       <- getRandomSpawnPoint
+             isFollowing    <- getRandom
+             timeNextE      += spawner^.interval
              if isFollowing < followingChance then
-                 enemies    %= (newFollowingEnemy spawnPos
-                                                  getFollowingEnemyPoints
-                                                  16 :)
+                 enemies    %= (newFollowingEnemy spawnPos getFollowingEnemyPoints 16 :)
              else do
                  thisSize   <- getRandomR (15, 45)
                  segmentNum <- getRandomR (5, 15)
@@ -280,28 +267,33 @@ getEnemyPoints :: RandomGen g => Float -> Int -> g -> [Point]
 getEnemyPoints size num g
     = helper num g
     where helper 0 _   = []
-          helper i gen = moveDir (fromIntegral i / fromIntegral num * 2 * pi) (size * val) Point {_x = 0, _y = 0} : helper (i - 1) newGen
-                          where (val, newGen) = randomR (1, 1.3) gen
+          helper i gen = moveDir direction (size * val) (newPoint 0 0) : helper (i - 1) newGen
+                         where (val, newGen) = randomR (1, 1.3) gen
+                               direction     = fromIntegral i / fromIntegral num * 2 * pi
+                               
 
--- Move the enemies in the world
+-- Move the enemies in the world, Collide them with the player
+-- Destroy the colliding enemies and create explosion particles
 moveEnemies :: MonadState World m => m ()
 moveEnemies = do plrPos     <- use $ player.playerPos
                  plrSize    <- use $ player.playerSize
                  invcT      <- use $ player.invincibleTime
-                 enemies.traversed %= moveEnemy plrPos
+                 allEnemies %= moveEnemy plrPos
                  -- Check if any enemies collide with the player (if the player isn't invincible)
                  if invcT > 0 then
                      player.invincibleTime -= 1
                  else do
-                     currentEnemies <- use enemies
-                     let collidingEnemies = filter (\e -> pointDistance plrPos (e^.enemyPos) < (e^.enemySize) + plrSize) currentEnemies
+                     currentEnemies      <- use enemies
+                     let getDist e        = pointDistance plrPos (e^.enemyPos)
+                     let plrHit e         = getDist e < (e^.enemySize) + plrSize
+                     let collidingEnemies = filter plrHit currentEnemies
                      -- Collide with player
                      unless (null collidingEnemies) $ do
                          player.scoreMul       .= 1
                          player.lives          -= 1
                          player.invincibleTime += invincibleTimeAfterCollision
+                         enemies               %= filter (not . (`elem` collidingEnemies))
                          explodeEnemies collidingEnemies
-                         enemies %= filter (not . (`elem` collidingEnemies)) -- Destroy any colliding enemies
                          -- Spawn explosion particles
                          replicateM_ 100 $ do
                              dir            <- getRandomR (0, 2 * pi)
@@ -312,33 +304,34 @@ moveEnemies = do plrPos     <- use $ player.playerPos
 -- Move a single enemy (needs the player position for tracking enemies)
 moveEnemy :: Point -> Enemy -> Enemy
 moveEnemy plrPos e
-    = e & enemyPos .~ if e^.movementType == FixedDirection then
-                          checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
-                      else
-                          moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
+    = e & enemyPos .~ 
+      if e^.movementType == FixedDirection then
+         checkPosition (moveDir (e^.enemyDir) (e^.enemySpeed) (e^.enemyPos)) (e^.enemySize)
+      else
+         moveTo (e^.enemySpeed) plrPos $ e^.enemyPos
 
 -- Move stars and spawn new ones
 handleStars :: MonadState World m => m ()
 handleStars = do stars.traversed %= (\star -> star & starPos . x -~ (star^.starSpeed))
-                 stars %= filter (\star -> star^.starPos.x > -screenWidth / 2)
+                 stars           %= filter (\star -> star^.starPos.x > -screenWidth / 2)
                  shouldSpawnStar <- getRandom
                  when (shouldSpawnStar < starSpawnChance) $ do
-                     newStarPos      <- getRandomR (-screenHeight / 2, screenHeight / 2)
-                     thisSpeed       <- getRandomR (1, 6)
-                     stars %= (newStar Point { _x = screenWidth / 2, _y = newStarPos} thisSpeed :)
+                     newStarPos <- getRandomR (-screenHeight / 2, screenHeight / 2)
+                     thisSpeed  <- getRandomR (1, 6)
+                     stars      %= (newStar (newPoint (screenWidth / 2) newStarPos) thisSpeed :)
 
 -- Make the particles smaller
 updateParticles :: MonadState World m => m ()
-updateParticles = do particles.traversed.partSize -= 1
-                     particles %= filter (\p -> p^.partSize > 0)
+updateParticles = do allParticles.partSize -= 1
+                     particles             %= filter (\p -> p^.partSize > 0)
 
 -- Get a random point at a certain minimum distance from the player
 getRandomSpawnPoint :: MonadState World m => m Point
 getRandomSpawnPoint = do pPos   <- use $ player.playerPos
                          spawnX <- getRandomR (-screenWidth / 2, screenWidth / 2)
                          spawnY <- getRandomR (-screenHeight / 2, screenHeight / 2)
-                         let spawnPos = Point {_x = spawnX, _y = spawnY}
-                         if pointDistance spawnPos pPos > 300 then
+                         let spawnPos = newPoint spawnX spawnY
+                         if  pointDistance spawnPos pPos > 300 then
                              return spawnPos
                          else
                              getRandomSpawnPoint
@@ -347,11 +340,11 @@ getRandomSpawnPoint = do pPos   <- use $ player.playerPos
 getRandomR :: (MonadState World m, Random a) => (a, a) -> m a
 getRandomR range = do generator <- use rndGen
                       let (r, g) = randomR range generator
-                      rndGen .= g
-                      return $ r
+                      rndGen    .= g
+                      return r
 
-getRandom :: (MonadState World m, Random a) => m (a)
+getRandom :: (MonadState World m, Random a) => m a
 getRandom = do generator <- use rndGen
                let (r, g) = random generator
-               rndGen .= g
-               return $ r
+               rndGen    .= g
+               return r

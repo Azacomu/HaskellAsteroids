@@ -46,24 +46,24 @@ data GameState         = InMenu | InGame                     deriving (Show, Eq)
 data BonusType         = ExtraMultiplier                     deriving (Show, Eq)
 
 --TODO: Add more datatypes here (player/enemy/etc.)
-data Player = Player { _playerPos   :: Point
-                     , _playerSize  :: Float
-                     , _playerSpeed :: Float
-                     , _playerDir   :: Float
-                     , _lives       :: Int
-                     , _score       :: Int
-                     , _scoreMul    :: Int
-                     , _baseShootTime :: Float
-                     , _shootTime   :: Float
+data Player = Player { _playerPos      :: Point
+                     , _playerSize     :: Float
+                     , _playerSpeed    :: Float
+                     , _playerDir      :: Float
+                     , _lives          :: Int
+                     , _score          :: Int
+                     , _scoreMul       :: Int
+                     , _baseShootTime  :: Float
+                     , _shootTime      :: Float
                      , _invincibleTime :: Float
                      } deriving (Show, Eq)
 data Enemy  = Enemy  { _enemyPos  :: Point
                      , _movementType :: EnemyMovementType 
-                     , _enemyDir  :: Float
-                     , _enemySize :: Float
-                     , _enemyEdges :: [Point]
+                     , _enemyDir     :: Float
+                     , _enemySize    :: Float
+                     , _enemyEdges   :: [Point]
                      , _enemyPicture :: Picture
-                     , _enemySpeed :: Float
+                     , _enemySpeed   :: Float
                      } deriving (Show, Eq)
 data Bullet = Bullet { _bulPos    :: Point
                      , _bulSpeed  :: Float
@@ -106,6 +106,14 @@ makeLenses ''Bonus
 makeLenses ''Star
 makeLenses ''Particle
 
+--Several combined lenses for simplicity
+allBullets   :: Traversal' World Bullet
+allEnemies   :: Traversal' World Enemy
+allParticles :: Traversal' World Particle
+allBullets   = bullets.traversed
+allEnemies   = enemies.traversed
+allParticles = particles.traversed
+
 --Constants for the size of the screen
 screenWidth  :: Float
 screenHeight :: Float
@@ -141,31 +149,35 @@ initial seed = World { _gameState      = InMenu
                       
 --Returns the starting values for a player
 newPlayer :: Player
-newPlayer = Player { _playerPos     = Point {_x = 0, _y = 0}
-                   , _playerSize    = 20
-                   , _playerSpeed   = 5
-                   , _playerDir     = 0
-                   , _lives         = 3
-                   , _score         = 0 
-                   , _scoreMul      = 1
-                   , _baseShootTime = 10
-                   , _shootTime     = 0
+newPlayer = Player { _playerPos      = newPoint 0 0
+                   , _playerSize     = 20
+                   , _playerSpeed    = 5
+                   , _playerDir      = 0
+                   , _lives          = 3
+                   , _score          = 0 
+                   , _scoreMul       = 1
+                   , _baseShootTime  = 10
+                   , _shootTime      = 0
                    , _invincibleTime = 0
                    }
+                   
+--Returns a new point with given x and y values
+newPoint :: Float -> Float -> Point
+newPoint px py = Point { _x = px, _y = py}
 
 -- How much invincible time you have after colliding
 invincibleTimeAfterCollision :: Float
 invincibleTimeAfterCollision = 60
             
---Returns a new enemy at a given (random) point, moving in a given dir
---with given picture and size
+--Returns a new enemy at a given (random) point, moving in a given dir with given picture and size
+--edgePoints are the points that make up the shape of the enemy
 newEnemy :: Point -> Float -> [Point] -> Float -> Float -> Enemy
 newEnemy p d edgePoints size speed
     = Enemy { _enemyPos     = p
             , _enemySize    = size
             , _movementType = FixedDirection
             , _enemyDir     = d
-            , _enemyEdges   = edgePoints --These are the points that make up the shape of the enemy
+            , _enemyEdges   = edgePoints 
             , _enemyPicture = getEnemyPic edgePoints
             , _enemySpeed   = speed
             }
@@ -177,8 +189,7 @@ followingEnemySpeed :: Float
 followingEnemySpeed = 3
 
 newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
-newFollowingEnemy p pnts size = set movementType
-                                    FollowPlayer
+newFollowingEnemy p pnts size = set movementType FollowPlayer
                                     $ newEnemy p 0 pnts size followingEnemySpeed
 
 newSpawner :: Float -> Spawner
@@ -201,7 +212,7 @@ newBullet p d = Bullet { _bulPos   = p
                        }
 
 newMenu :: Menu
-newMenu = Menu { _hasDiedBefore = False
+newMenu = Menu { _hasDiedBefore   = False
                , _selectionOption = 0 }
 
 starSpawnChance :: Float

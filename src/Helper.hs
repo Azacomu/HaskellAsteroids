@@ -6,6 +6,27 @@ import Graphics.Gloss hiding (Point)
 
 import Model
 
+--Class for objects you can collide with
+class Collider a where
+    --Checks if there is a collision with a Bullet and returns it
+    collideWith :: [a] -> Bullet -> Maybe (Bullet, a)
+    
+--Instance to collide enemies with bullets
+--Use enemy size * 1.3 because we use an optimistic hitbox 
+--(enemies can be a bit bigger than their size, because of the shape)
+instance Collider Enemy where
+    collideWith es b | null flist = Nothing
+                     | otherwise  = Just (b, head flist)
+                     where flist  = filter (\e -> dist e < (e^.enemySize * 1.3)) es
+                           dist e = pointDistance (e^.enemyPos) (b^.bulPos)
+
+--Instance to collide bonuses with bullets                          
+instance Collider Bonus where
+    collideWith bs b | null flist  = Nothing
+                     | otherwise   = Just (b, head flist)
+                     where flist   = filter (\bo -> dist bo < bonusSize) bs
+                           dist bo = pointDistance (bo^.bonusPos) (b^.bulPos)
+                           
 --Helper function to change our Point to the gloss Vector
 toVector :: Point -> Vector
 toVector p = (p^.x, p^.y)
