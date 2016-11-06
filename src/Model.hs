@@ -120,6 +120,25 @@ screenHeight :: Float
 screenWidth  = defaultHorizontalResolution
 screenHeight = defaultVerticalResolution
 
+--How much invincible time you have after colliding
+invincibleTimeAfterCollision :: Float
+invincibleTimeAfterCollision = 60
+
+--Constant speed of a following enemy
+followingEnemySpeed :: Float
+followingEnemySpeed = 3
+
+--The bonus size is always the same
+bonusSize :: Float
+bonusSize = 12
+
+starSpawnChance :: Float
+starSpawnChance = 0.3
+
+-- Chance a following enemy is spawned
+followingChance :: Float
+followingChance = 0.4
+
 --Returns the starting world of the game based on given seed
 initial :: Int -> World
 initial seed = World { _gameState      = InMenu
@@ -164,10 +183,6 @@ newPlayer = Player { _playerPos      = newPoint 0 0
 --Returns a new point with given x and y values
 newPoint :: Float -> Float -> Point
 newPoint px py = Point { _x = px, _y = py}
-
--- How much invincible time you have after colliding
-invincibleTimeAfterCollision :: Float
-invincibleTimeAfterCollision = 60
             
 --Returns a new enemy at a given (random) point, moving in a given dir with given picture and size
 --edgePoints are the points that make up the shape of the enemy
@@ -185,9 +200,6 @@ newEnemy p d edgePoints size speed
 getEnemyPic :: [Point] -> Picture
 getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) points
 
-followingEnemySpeed :: Float
-followingEnemySpeed = 3
-
 newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
 newFollowingEnemy p pnts size = set movementType FollowPlayer
                                     $ newEnemy p 0 pnts size followingEnemySpeed
@@ -198,10 +210,6 @@ newSpawner intval = Spawner { _timeToNext = intval - 1
 
 newBonus :: Point -> Bonus
 newBonus position = Bonus { _bonusPos = position }
-
---The bonus size is always the same
-bonusSize :: Float
-bonusSize = 12
 
 --Returns a new Bullet with given position and direction                               
 newBullet :: Point -> Float -> Bullet
@@ -214,13 +222,6 @@ newBullet p d = Bullet { _bulPos   = p
 newMenu :: Menu
 newMenu = Menu { _hasDiedBefore   = False
                , _selectionOption = 0 }
-
-starSpawnChance :: Float
-starSpawnChance = 0.3
-
--- Chance a following enemy is spawned
-followingChance :: Float
-followingChance = 0.4
 
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
