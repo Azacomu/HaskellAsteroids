@@ -34,3 +34,6 @@ scaleBoth s = scale s s
 addPoints :: Point -> Point -> Point
 addPoints p1 p2 = Point { _x = p1^.x + p2^.x, _y = p1^.y + p2^.y}
 
+-- Map with index
+indexedMap :: (a -> Int -> b) -> [a] -> [b]
+indexedMap func list = zipWith func list [0 ..]

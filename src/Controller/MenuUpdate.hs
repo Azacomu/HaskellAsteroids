@@ -6,7 +6,6 @@ import Control.Lens
 import Control.Monad
 import Control.Monad.State
 import System.Exit
-import System.IO.Unsafe
 
 import Model
 
@@ -16,19 +15,24 @@ menuOptions :: Bool -> [String]
 menuOptions True  = ["Play Again", "Quit"]
 menuOptions False = ["Play", "Quit"]
 
-updateMenu :: MonadState World m => m ()
-updateMenu = do hasJustDied <- use $ menu.hasDiedBefore
+-- Update the menu using the world state
+updateMenu :: StateT World IO ()
+updateMenu = do hasJustDied <- use $ menu.hasDiedBefore -- Whether we just died
+                let menuOptionNum = length $ menuOptions hasJustDied
+                -- Go to the previous menu option if selected by the player
                 selectsPrev <- use doesSelectPrev
                 when selectsPrev $
-                    menu.selectionOption %= (\o -> if o > 0 then o - 1 else o)
+                    menu.selectionOption %= max 0 . subtract 1
+                -- Go the the next menu option if selected
                 selectsNext <- use doesSelectNext
                 when selectsNext $
-                    menu.selectionOption %= (\o -> if o + 1 < length (menuOptions hasJustDied) then o + 1 else o)
+                    menu.selectionOption %= min (menuOptionNum - 1) . (+) 1
+                -- Do something when we select a menu option
                 confirms    <- use doesConfirm
                 nowSelected <- use $ menu.selectionOption
                 when confirms $
-                    if nowSelected == 0 then do
-                        player.score .= 0
-                        gameState    .= InGame
-                    else when (nowSelected == 1) $
-                        unsafePerformIO exitSuccess
+                    case nowSelected of -- Play
+                                        0 -> do player.score .= 0
+                                                gameState    .= InGame
+                                        -- Quit
+                                        1 -> lift exitSuccess
