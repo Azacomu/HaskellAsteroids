@@ -85,7 +85,7 @@ drawLives hres vres n = pictures $ drawLives hres vres (n-1) : [picture]
                         where picture = translate (fromIntegral $ n * 30) 0 $
                                         scaleBoth 0.5 $ modelPlayer 1
 
---Draws all in-game GUI elements
+--Draws all in-game GUI elements (except highscore, as that is in World, not Player)
 drawGUI :: Float -> Float -> Player -> Picture
 drawGUI h v plr =    drawScore      h v (plr^.score)
                   <> drawMultiplier h v (plr^.scoreMul)
@@ -95,7 +95,7 @@ drawGUI h v plr =    drawScore      h v (plr^.score)
 modelPlayer :: Float -> Picture
 modelPlayer alpha = pictures [ color col1 (line [(-16,-20), (0,20), (16,-20)]) 
                              , color col1 (line [(-12,-10), (12,-10)])
-                             , drawCircle Point {_x = 0, _y = 5} col2 3 ]
+                             , drawCircle (newPoint 0 5) col2 3 ]
                   where col1 = withAlpha alpha white
                         col2 = withAlpha alpha green
 

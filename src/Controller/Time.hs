@@ -103,6 +103,7 @@ resetKeys = do doesConfirm    .= False
                doesSelectNext .= False
 
 --Move the player if needed (and still possible)
+--Also spawn particles in the direction the player is moving
 movePlayer :: MonadState World m => m ()
 movePlayer = do moveAction <- use movementAction
                 lvs        <- use $ player.lives
@@ -120,7 +121,8 @@ movePlayer = do moveAction <- use movementAction
                     particles    %= (newParticle partPos2 5 yellow :)
                     plrPos       .= checkPosition newDir (p^.playerSize)
                     
---Checks whether the position with given offset is still inside the screen, if not returns the new position                  
+--Checks whether the position with given offset is still inside the screen
+--if not returns the new position                  
 checkPosition :: Point -> Float -> Point
 checkPosition pos off = case outsideBounds pos off of
                             East  -> (x -~ screenWidth  + off) pos
