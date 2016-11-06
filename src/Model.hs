@@ -85,15 +85,15 @@ data Particle = Particle { _partPos  :: Point
                          , _partCol  :: Color}
                          deriving (Show, Eq)
                      
--- Contains data needed for spawning things
--- only the time to next at the moment, but this could include much more
--- (such as the enemy type, patterns, etc.)
+--Contains data needed for spawning things
+--only the time to next at the moment, but this could include much more
+--(such as the enemy type, patterns, etc.)
 data Spawner = Spawner { _timeToNext :: Float
                        , _interval   :: Float } deriving (Show)
 
 --Add lenses below (must be after defining datatypes)
 --(TemplateHaskell can do this automatically with makeLenses,
--- this will make a lens for all _ vars in the datatype )
+--this will make a lens for all _ vars in the datatype )
 makeLenses ''World
 makeLenses ''Player
 makeLenses ''Enemy
@@ -135,7 +135,7 @@ bonusSize = 12
 starSpawnChance :: Float
 starSpawnChance = 0.3
 
--- Chance a following enemy is spawned
+--Chance a following enemy is spawned
 followingChance :: Float
 followingChance = 0.4
 
@@ -197,21 +197,21 @@ newEnemy p d edgePoints size speed
             , _enemySpeed   = speed
             }
 
--- Get a picture of an enemy based on a list of points
+--Get a picture of an enemy based on a list of points
 getEnemyPic :: [Point] -> Picture
 getEnemyPic points = color red $ lineLoop $ map (\p -> (p^.x, p^.y)) points
 
--- Create a new enemy which follows the player
+--Create a new enemy which follows the player
 newFollowingEnemy :: Point -> [Point] -> Float -> Enemy
 newFollowingEnemy p pnts size = set movementType FollowPlayer
                                     $ newEnemy p 0 pnts size followingEnemySpeed
 
--- Create a new spawner of something with a given time interval
+--Create a new spawner of something with a given time interval
 newSpawner :: Float -> Spawner
 newSpawner intval = Spawner { _timeToNext = intval - 1
                             , _interval   = intval }
 
--- Create a new bonus at a given position
+--Create a new bonus at a given position
 newBonus :: Point -> Bonus
 newBonus position = Bonus { _bonusPos = position }
 
@@ -223,18 +223,18 @@ newBullet p d = Bullet { _bulPos   = p
                        , _bulTime  = 60
                        }
 
--- Create the menu
+--Create the menu
 newMenu :: Menu
 newMenu = Menu { _hasDiedBefore   = False
                , _selectionOption = 0 }
 
--- Create a new start at a given position with a given speed
+--Create a new start at a given position with a given speed
 newStar :: Point -> Float -> Star
 newStar p s = Star { _starPos   = p
                    , _starSpeed = s
                    }
 
--- Create a new particle, given the position, size and color.
+--Create a new particle, given the position, size and color.
 newParticle :: Point -> Float -> Color -> Particle
 newParticle position size col = Particle { _partPos  = position
                                          , _partSize = size
