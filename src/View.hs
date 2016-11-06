@@ -30,13 +30,15 @@ draw horizontalResolution verticalResolution world
           <> drawBonuses world
           <> drawHighscore horizontalResolution verticalResolution (world^.highscore)
 
---Returns a circle around given point, in given color, with given radius
+--Returns a circle around a given point, in given color, with given radius
 drawCircle :: Point -> Color -> Float -> Picture
 drawCircle p c r = translate (p^.x) (p^.y) (color c (circle r))
 
+-- Draw a solid circle around a given point, in the given color, with the given radius
 drawCircleSolid :: Point -> Color -> Float -> Picture
 drawCircleSolid p c r = translate (p^.x) (p^.y) (color c (circleSolid r))
 
+-- Draw all enemies using their pictures
 drawEnemies :: World -> Picture
 drawEnemies world = pictures $ map drawEnemy (world^.enemies)
                   where drawEnemy e = translate (e^.enemyPos.x) (e^.enemyPos.y) $ e^.enemyPicture
@@ -56,6 +58,7 @@ drawBullets world = pictures $ map drawBullet (world^.bullets)
                         path b       = [toVector $ b^.bulPos
                                        ,toVector $ moveDir (b^.bulDir) (-8) (b^.bulPos)]
 
+-- Draw the bonuses as circles
 drawBonuses :: World -> Picture
 drawBonuses world = pictures $ map drawBonus (world^.bonuses)
                   where drawBonus bonus = drawCircle (bonus^.bonusPos) yellow bonusSize
@@ -95,13 +98,16 @@ modelPlayer alpha = pictures [ color col1 (line [(-16,-20), (0,20), (16,-20)])
                              , drawCircle Point {_x = 0, _y = 5} col2 3 ]
                   where col1 = withAlpha alpha white
                         col2 = withAlpha alpha green
-                  
+
+-- Draw all stars as circles of a opacity and size depending on their speed
+-- (slower stars will be further away and thus smaller and more transparant)        
 drawStars :: World -> Picture
 drawStars world = pictures $ map drawStar (world^.stars)
                 where drawStar star = drawCircleSolid (star^.starPos) 
                                      (makeColor 1 1 1 $ star^.starSpeed / 7) 
                                      (star^.starSpeed)
-                
+
+-- Draw all particles as colored solid circles
 drawParticles :: World -> Picture
 drawParticles world = pictures $ map drawPart (world^.particles)
                     where drawPart part = drawCircleSolid (part^.partPos) 
