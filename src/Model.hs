@@ -131,6 +131,7 @@ followingEnemySpeed = 3
 bonusSize :: Float
 bonusSize = 12
 
+--Constant of the spawn chance for stars (background)
 starSpawnChance :: Float
 starSpawnChance = 0.3
 
